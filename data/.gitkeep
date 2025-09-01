@@ -1,0 +1,10 @@
+# This file preserves the results directory structure in git
+#
+# Directory structure:
+# results/
+# ├── models/   - Trained model checkpoints and weights
+# ├── figures/  - Generated plots, graphs, and visualizations  
+# └── logs/     - Training logs, metrics, and experiment records
+#
+# Note: Large result files are ignored by .gitignore
+# Only directory structure is preserved

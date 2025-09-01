@@ -1,0 +1,100 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Data directories (keep structure but ignore contents)
+data/inputs/*
+data/outputs/*
+data/raw/*
+data/processed/*
+!data/.gitkeep
+!data/inputs/.gitkeep
+!data/outputs/.gitkeep
+
+# Results and experiments
+results/*
+outputs/*
+!results/.gitkeep
+
+# Weights & Biases
+wandb/
+*.wandb
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyTorch
+*.pth
+*.pt
+checkpoints/
+lightning_logs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+.jupyter/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# IDEs
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.docker/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.tmp/
+
+# Conda
+.conda/
+.condarc
+
+# history
+.history/*

@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  sda-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fluid-sbi-dev
+    volumes:
+      # Mount the entire project directory
+      - .:/workspace
+      # Persistent conda cache
+      - conda_cache:/opt/conda/pkgs
+      # Mount for persistent results
+      - ./data:/workspace/data
+      - ./results:/workspace/results
+    ports:
+      - "8888:8888"  # Jupyter Lab
+      - "6006:6006"  # TensorBoard
+      - "8000:8000"  # Additional dev server
+    environment:
+      - WANDB_API_KEY=${WANDB_API_KEY:-}
+      - WANDB_PROJECT=${WANDB_PROJECT:-fluid-sbi-experiments}
+      - WANDB_ENTITY=${WANDB_ENTITY:-}
+      - PYTHONPATH=/workspace:/workspace/sda
+      - JUPYTER_ENABLE_LAB=yes
+      # GPU support
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=all
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    # Uncomment for NVIDIA GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fluid-sbi-jupyter
+    volumes:
+      - .:/workspace
+      - ./data:/workspace/data
+      - ./results:/workspace/results
+    ports:
+      - "8889:8888"
+    environment:
+      - WANDB_API_KEY=${WANDB_API_KEY:-}
+      - WANDB_PROJECT=${WANDB_PROJECT:-fluid-sbi-experiments}
+      - PYTHONPATH=/workspace:/workspace/sda
+    working_dir: /workspace
+    command: >
+      bash -c "conda activate sda && 
+               jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root 
+               --NotebookApp.token='' --NotebookApp.password='' 
+               --ServerApp.root_dir=/workspace"
+    profiles:
+      - jupyter
+
+volumes:
+  conda_cache:
