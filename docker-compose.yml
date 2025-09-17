@@ -14,10 +14,6 @@ services:
       # Mount for persistent results
       - ./data:/workspace/data
       - ./results:/workspace/results
-    ports:
-      - "8888:8888"  # Jupyter Lab
-      - "6006:6006"  # TensorBoard
-      - "8000:8000"  # Additional dev server
     environment:
       - WANDB_API_KEY=${WANDB_API_KEY:-}
       - WANDB_PROJECT=${WANDB_PROJECT:-fluid-sbi-experiments}

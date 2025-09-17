@@ -98,3 +98,7 @@ Thumbs.db
 
 # history
 .history/*
+
+# local config
+.tmux.conf
+.zshrc

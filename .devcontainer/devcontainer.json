@@ -3,22 +3,16 @@
   "dockerComposeFile": "../docker-compose.yml",
   "service": "sda-dev",
   "workspaceFolder": "/workspace",
-  
+
   "customizations": {
     "vscode": {
       "settings": {
         "python.defaultInterpreterPath": "/opt/conda/envs/sda/bin/python",
         "python.terminal.activateEnvironment": true,
-        "python.analysis.extraPaths": [
-          "/workspace/sda",
-          "/workspace"
-        ],
+        "python.analysis.extraPaths": ["/workspace/sda", "/workspace"],
         "terminal.integrated.defaultProfile.linux": "bash",
         "terminal.integrated.profiles.linux": {
-          "bash": {
-            "path": "/bin/bash",
-            "args": ["-c", "conda activate sda && exec bash"]
-          }
+          "bash": { "path": "/bin/bash", "args": ["-c", "conda activate sda && exec bash"] }
         },
         "jupyter.jupyterServerType": "local",
         "jupyter.notebookFileRoot": "${workspaceFolder}",
@@ -34,7 +28,6 @@
         "python.linting.flake8Enabled": true,
         "editor.formatOnSave": true
       },
-      
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
@@ -54,32 +47,25 @@
       ]
     }
   },
-  
+
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
-  
+
+  // VS Code の転送を使う（ports競合防止）
   "forwardPorts": [8888, 6006, 8000],
   "portsAttributes": {
-    "8888": {
-      "label": "Jupyter Lab",
-      "onAutoForward": "notify"
-    },
-    "6006": {
-      "label": "TensorBoard", 
-      "onAutoForward": "silent"
-    },
-    "8000": {
-      "label": "Dev Server",
-      "onAutoForward": "silent"
-    }
+    "8888": { "label": "Jupyter Lab", "onAutoForward": "notify" },
+    "6006": { "label": "TensorBoard", "onAutoForward": "silent" },
+    "8000": { "label": "Dev Server", "onAutoForward": "silent" }
   },
-  
-  "postCreateCommand": "bash -c 'conda activate sda && pip install git+https://github.com/google/jax-cfd && pip install -e ./sda'",
-  
+
+  // Dockerfileで済ませているので基本は空に
+  "postCreateCommand": "",
+
   "remoteUser": "root",
-  
+
   "mounts": [
     "source=${localWorkspaceFolder}/data,target=/workspace/data,type=bind,consistency=cached",
     "source=${localWorkspaceFolder}/results,target=/workspace/results,type=bind,consistency=cached"
