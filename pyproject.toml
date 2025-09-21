@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "ipywidgets>=8.1.7",
+    "jax==0.4.30",
+    "jaxlib==0.4.30",
     "jupyterlab>=4.4.7",
     "matplotlib>=3.10.6",
     "numpy>=2.2.6",
@@ -13,6 +15,9 @@ dependencies = [
     "pot>=0.9.6",
     "scipy>=1.15.3",
     "seaborn>=0.13.2",
+    "torch==2.2.*",
+    "torchaudio==2.2.*",
+    "torchvision==0.17.*",
     "tqdm>=4.67.1",
     "wandb>=0.22.0",
 ]
