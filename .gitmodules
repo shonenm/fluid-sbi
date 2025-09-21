@@ -1,4 +1,4 @@
 [submodule "sda"]
 	path = sda
-	url = https://github.com/francois-rozet/sda.git
+	url = https://github.com/shonenm/sda.git
 	branch = master
