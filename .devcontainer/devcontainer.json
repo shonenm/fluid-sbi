@@ -3,79 +3,29 @@
   "dockerComposeFile": "../docker-compose.yml",
   "service": "sda-dev",
   "workspaceFolder": "/workspace",
-
   "customizations": {
     "vscode": {
       "settings": {
-        // ★ venv を既定の Python に
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
-        "python.terminal.activateEnvironment": true,
-
-        "python.analysis.extraPaths": ["/workspace/sda", "/workspace"],
-
-        // ★ ログインシェル
-        "terminal.integrated.defaultProfile.linux": "zsh",
-        "terminal.integrated.profiles.linux": {
-          "zsh":  { "path": "/usr/bin/zsh", "args": ["-l"] },
-          "bash": { "path": "/bin/bash",   "args": ["-l"] }
-        },
-
+        "python.analysis.extraPaths": ["/workspace", "/workspace/sda"],
         "jupyter.jupyterServerType": "local",
         "jupyter.notebookFileRoot": "${workspaceFolder}",
-
-        "files.watcherExclude": {
-          "**/wandb/**": true,
-          "**/data/**": true,
-          "**/results/**": true,
-          "**/.git/**": true
-        },
-
-        "python.formatting.provider": "black",
-        "python.linting.enabled": true,
-        "python.linting.pylintEnabled": false,
-        "python.linting.flake8Enabled": true,
-        "editor.formatOnSave": true
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": { "path": "/bin/bash", "args": [] }
+        }
       },
       "extensions": [
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "ms-python.black-formatter",
-        "ms-python.isort",
-        "ms-toolsai.jupyter",
-        "ms-toolsai.vscode-jupyter-cell-tags",
-        "ms-toolsai.vscode-jupyter-slideshow",
-        "charliermarsh.ruff",
-        "GitHub.copilot",
-        "GitHub.copilot-chat",
-        "eamodio.gitlens",
-        "ms-vscode.vscode-json",
-        "redhat.vscode-yaml",
-        "ms-vscode.cmake-tools",
-        "twxs.cmake"
+        "ms-python.python", "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter", "charliermarsh.ruff",
+        "ms-python.black-formatter", "ms-python.isort",
+        "eamodio.gitlens"
       ]
     }
   },
-
   "features": {
-    "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/git:1": {}
   },
-
-  // VS Code のポート転送を使う（hostの競合を避ける）
   "forwardPorts": [8888, 6006, 8000],
-  "portsAttributes": {
-    "8888": { "label": "Jupyter Lab", "onAutoForward": "notify" },
-    "6006": { "label": "TensorBoard", "onAutoForward": "silent" },
-    "8000": { "label": "Dev Server", "onAutoForward": "silent" }
-  },
-
-  // 依存は Dockerfile で完了
-  "postCreateCommand": "",
-
-  "remoteUser": "root",
-
-  "mounts": [
-    "source=${localWorkspaceFolder}/data,target=/workspace/data,type=bind,consistency=cached",
-    "source=${localWorkspaceFolder}/results,target=/workspace/results,type=bind,consistency=cached"
-  ]
+  "remoteUser": "root"
 }
