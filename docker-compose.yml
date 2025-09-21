@@ -7,11 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: fluid-sbi-dev
     volumes:
-      # Mount the entire project directory
       - .:/workspace
-      # Persistent conda cache
-      - conda_cache:/opt/conda/pkgs
-      # Mount for persistent results
       - ./data:/workspace/data
       - ./results:/workspace/results
     environment:
@@ -19,45 +15,46 @@ services:
       - WANDB_PROJECT=${WANDB_PROJECT:-fluid-sbi-experiments}
       - WANDB_ENTITY=${WANDB_ENTITY:-}
       - PYTHONPATH=/workspace:/workspace/sda
-      - JUPYTER_ENABLE_LAB=yes
-      # GPU support
-      - NVIDIA_VISIBLE_DEVICES=all
-      - CUDA_VISIBLE_DEVICES=all
+      # venv を明示（Dockerfile で /opt/venv を作ってる前提）
+      - VIRTUAL_ENV=/opt/venv
+      - PATH=/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      # GPU を使うなら下の `gpus: all` を有効化（Docker 20.10+）
+      # 旧来の deploy:resources は Swarm 専用なので使いません
+    # gpus: all
     working_dir: /workspace
     stdin_open: true
     tty: true
-    # Uncomment for NVIDIA GPU support
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
 
+  # 必要なときだけ分離起動できる Jupyter サービス（profile 指定）
   jupyter:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: fluid-sbi-jupyter
+    profiles: [jupyter]
     volumes:
       - .:/workspace
       - ./data:/workspace/data
       - ./results:/workspace/results
-    ports:
-      - "8889:8888"
     environment:
       - WANDB_API_KEY=${WANDB_API_KEY:-}
       - WANDB_PROJECT=${WANDB_PROJECT:-fluid-sbi-experiments}
       - PYTHONPATH=/workspace:/workspace/sda
+      - VIRTUAL_ENV=/opt/venv
+      - PATH=/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     working_dir: /workspace
-    command: >
-      bash -c "conda activate sda && 
-               jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root 
-               --NotebookApp.token='' --NotebookApp.password='' 
-               --ServerApp.root_dir=/workspace"
-    profiles:
-      - jupyter
+    # ポート競合を避けたい場合は ports を外して VS Code の forwardPorts を使用
+    # 直接公開したい場合だけ有効化（例: 8889->8888）
+    # ports:
+    #   - "8889:8888"
+    command: >-
+      bash -lc '
+        uv run jupyter lab
+          --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+          --ServerApp.root_dir=/workspace
+          --ServerApp.token="" --ServerApp.password=""
+      '
+    stdin_open: true
+    tty: true
 
-volumes:
-  conda_cache:
+volumes: {}

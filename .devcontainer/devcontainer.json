@@ -7,21 +7,29 @@
   "customizations": {
     "vscode": {
       "settings": {
-        "python.defaultInterpreterPath": "/opt/conda/envs/sda/bin/python",
+        // ★ venv を既定の Python に
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
         "python.terminal.activateEnvironment": true,
+
         "python.analysis.extraPaths": ["/workspace/sda", "/workspace"],
-        "terminal.integrated.defaultProfile.linux": "bash",
+
+        // ★ ログインシェル
+        "terminal.integrated.defaultProfile.linux": "zsh",
         "terminal.integrated.profiles.linux": {
-          "bash": { "path": "/bin/bash", "args": ["-c", "conda activate sda && exec bash"] }
+          "zsh":  { "path": "/usr/bin/zsh", "args": ["-l"] },
+          "bash": { "path": "/bin/bash",   "args": ["-l"] }
         },
+
         "jupyter.jupyterServerType": "local",
         "jupyter.notebookFileRoot": "${workspaceFolder}",
+
         "files.watcherExclude": {
           "**/wandb/**": true,
           "**/data/**": true,
           "**/results/**": true,
           "**/.git/**": true
         },
+
         "python.formatting.provider": "black",
         "python.linting.enabled": true,
         "python.linting.pylintEnabled": false,
@@ -53,7 +61,7 @@
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
-  // VS Code の転送を使う（ports競合防止）
+  // VS Code のポート転送を使う（hostの競合を避ける）
   "forwardPorts": [8888, 6006, 8000],
   "portsAttributes": {
     "8888": { "label": "Jupyter Lab", "onAutoForward": "notify" },
@@ -61,7 +69,7 @@
     "8000": { "label": "Dev Server", "onAutoForward": "silent" }
   },
 
-  // Dockerfileで済ませているので基本は空に
+  // 依存は Dockerfile で完了
   "postCreateCommand": "",
 
   "remoteUser": "root",
