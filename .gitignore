@@ -102,3 +102,4 @@ Thumbs.db
 # local config
 .tmux.conf
 .zshrc
+.dawgz/*
