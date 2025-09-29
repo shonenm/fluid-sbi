@@ -103,4 +103,4 @@ Thumbs.db
 .tmux.conf
 .zshrc
 .dawgz/*
-.cluade/settings.local.json
+.claude/settings.local.json
