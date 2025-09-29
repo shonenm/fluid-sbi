@@ -3,29 +3,57 @@
   "dockerComposeFile": "../docker-compose.yml",
   "service": "sda-dev",
   "workspaceFolder": "/workspace",
+
+  // ← これ超重要：compose の command/entrypoint を上書きしない
+  "overrideCommand": false,
+
   "customizations": {
     "vscode": {
       "settings": {
+        // Dockerfile で作った venv に合わせる
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
-        "python.analysis.extraPaths": ["/workspace", "/workspace/sda"],
+
+        // sda（submodule）＆ extensions を補完/型解決に含める
+        "python.analysis.extraPaths": [
+          "/workspace",
+          "/workspace/sda",
+          "/workspace/extensions"
+        ],
+
+        // 今回はJupyterを使わない想定（使うならこのままでOK）
         "jupyter.jupyterServerType": "local",
         "jupyter.notebookFileRoot": "${workspaceFolder}",
-        "terminal.integrated.defaultProfile.linux": "bash",
+
+        // コンテナは zsh を標準に
+        "terminal.integrated.defaultProfile.linux": "zsh",
         "terminal.integrated.profiles.linux": {
-          "bash": { "path": "/bin/bash", "args": [] }
-        }
+          "zsh": { "path": "/usr/bin/zsh", "args": ["-l"] },
+          "bash": { "path": "/bin/bash", "args": ["-l"] }
+        },
+
+        // お好み（必要なら）
+        "python.formatting.provider": "black",
+        "editor.formatOnSave": true
       },
       "extensions": [
-        "ms-python.python", "ms-python.vscode-pylance",
-        "ms-toolsai.jupyter", "charliermarsh.ruff",
-        "ms-python.black-formatter", "ms-python.isort",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "charliermarsh.ruff",
+        "ms-python.black-formatter",
+        "ms-python.isort",
         "eamodio.gitlens"
       ]
     }
   },
+
   "features": {
     "ghcr.io/devcontainers/features/git:1": {}
   },
+
+  // Jupyter は使わない前提だが、ポート転送を残すのは無害
   "forwardPorts": [8888, 6006, 8000],
+
+  // すでに compose の service で root 想定
   "remoteUser": "root"
 }

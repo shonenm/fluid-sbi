@@ -1,60 +1,83 @@
-version: '3.8'
+version: "3.8"
 
 services:
+  # 開発・実行指示（sbatch/srun/sinfo を叩くクライアント）
   sda-dev:
     build:
       context: .
       dockerfile: Dockerfile
+    image: fluid-sbi:base
     container_name: fluid-sbi-dev
+    hostname: sda-dev
+    command: ["/usr/local/bin/entrypoint-dev.sh"]
+    working_dir: /workspace
     volumes:
       - .:/workspace
       - ./data:/workspace/data
       - ./results:/workspace/results
+      # MUNGE 鍵（named volume）を共有
+      - munge:/etc/munge
+      # Slurm 設定を読み取り専用で共有
+      - ./infra/slurm/config/slurm.conf:/etc/slurm/slurm.conf:ro
+      - ./infra/slurm/config/gres.conf:/etc/slurm/gres.conf:ro
     environment:
+      - PYTHONPATH=/workspace:/workspace/sda
+      - PYTHONPATH=/workspace:/workspace/sda:/workspace/extensions
+      - VIRTUAL_ENV=/opt/venv
+      - PATH=/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       - WANDB_API_KEY=${WANDB_API_KEY:-}
       - WANDB_PROJECT=${WANDB_PROJECT:-fluid-sbi-experiments}
       - WANDB_ENTITY=${WANDB_ENTITY:-}
-      - PYTHONPATH=/workspace:/workspace/sda
-      # venv を明示（Dockerfile で /opt/venv を作ってる前提）
-      - VIRTUAL_ENV=/opt/venv
-      - PATH=/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      # GPU を使うなら下の `gpus: all` を有効化（Docker 20.10+）
-      # 旧来の deploy:resources は Swarm 専用なので使いません
-    # gpus: all
-    working_dir: /workspace
     stdin_open: true
     tty: true
+    networks: [slurmnet]
+    depends_on: [slurmctld]
 
-  # 必要なときだけ分離起動できる Jupyter サービス（profile 指定）
-  jupyter:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: fluid-sbi-jupyter
-    profiles: [jupyter]
+  # Slurm 管理ノード（キュー＆スケジューラ）
+  slurmctld:
+    image: fluid-sbi:base
+    container_name: slurmctld
+    hostname: slurmctld
+    command: ["/usr/local/bin/entrypoint-ctrl.sh"]
     volumes:
-      - .:/workspace
+      - munge:/etc/munge
+      - ./infra/slurm/config/slurm.conf:/etc/slurm/slurm.conf:ro
+      - ./infra/slurm/config/gres.conf:/etc/slurm/gres.conf:ro
+      - slurm_state:/var/spool
+      - slurm_logs:/var/log/slurm
+    restart: unless-stopped
+    networks: [slurmnet]
+
+  # Slurm 計算ノード（実ジョブが走る／GPUここだけ）
+  slurmd:
+    image: fluid-sbi:base
+    container_name: slurmd
+    hostname: slurmd
+    command: ["/usr/local/bin/entrypoint-node.sh"]
+    # Docker 20.10+ ならこれで OK（Swarm ではないので deploy: は不要）
+    gpus: all
+    volumes:
+      - munge:/etc/munge
+      - ./infra/slurm/config/slurm.conf:/etc/slurm/slurm.conf:ro
+      - ./infra/slurm/config/gres.conf:/etc/slurm/gres.conf:ro
+      - slurmd_state:/var/spool/slurmd
+      - slurm_logs:/var/log/slurm
+      # 実行時にコード/データへアクセス
+      - .:/workspace:ro
       - ./data:/workspace/data
       - ./results:/workspace/results
     environment:
-      - WANDB_API_KEY=${WANDB_API_KEY:-}
-      - WANDB_PROJECT=${WANDB_PROJECT:-fluid-sbi-experiments}
       - PYTHONPATH=/workspace:/workspace/sda
-      - VIRTUAL_ENV=/opt/venv
-      - PATH=/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-    working_dir: /workspace
-    # ポート競合を避けたい場合は ports を外して VS Code の forwardPorts を使用
-    # 直接公開したい場合だけ有効化（例: 8889->8888）
-    # ports:
-    #   - "8889:8888"
-    command: >-
-      bash -lc '
-        uv run jupyter lab
-          --ip=0.0.0.0 --port=8888 --no-browser --allow-root
-          --ServerApp.root_dir=/workspace
-          --ServerApp.token="" --ServerApp.password=""
-      '
-    stdin_open: true
-    tty: true
+      - PYTHONPATH=/workspace:/workspace/sda:/workspace/extensions
+    restart: unless-stopped
+    networks: [slurmnet]
+    depends_on: [slurmctld]
 
-volumes: {}
+volumes:
+  munge: {}         # MUNGE 鍵（コンテナ内で初回自動生成→共有）
+  slurm_state: {}   # ctld 側 state 保存
+  slurmd_state: {}  # node 側 state 保存
+  slurm_logs: {}    # ログ（両者で共有しても OK）
+
+networks:
+  slurmnet: {}
