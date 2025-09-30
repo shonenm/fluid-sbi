@@ -9,6 +9,13 @@ services:
     hostname: sda-dev
     command: ["/usr/local/bin/entrypoint-dev.sh"]
     working_dir: /workspace
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+              count: all
     volumes:
       - .:/workspace
       - ./data:/workspace/data
