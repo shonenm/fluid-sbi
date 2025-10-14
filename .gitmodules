@@ -2,6 +2,6 @@
 	path = sda
 	url = https://github.com/shonenm/sda.git
 	branch = master
-[submodule "ibpm"]
-	path = ibpm
-	url = https://github.com/cwrowley/ibpm.git
+# [submodule "ibpm"]
+# 	path = ibpm
+# 	url = https://github.com/cwrowley/ibpm.git
