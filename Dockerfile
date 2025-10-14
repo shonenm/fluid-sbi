@@ -30,6 +30,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     munge libmunge2 pciutils && \
     rm -rf /var/lib/apt/lists/*
 
+# 必須: FFTW3（CPU版）。doxygen は任意（不要なら削ってOK）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libfftw3-dev doxygen pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+
+# ソースを固定ディレクトリへ配置してビルド
+ENV IBPM_HOME=/opt/ibpm
+RUN git clone --depth=1 https://github.com/cwrowley/ibpm.git $IBPM_HOME \
+ && make -C $IBPM_HOME
+
+# どこからでも `ibpm` 実行できるようにラッパーを用意
+# /workspace/ibpm がある場合はそちらを優先ビルド→実行（拡張しやすい）
+RUN bash -lc 'cat > /usr/local/bin/ibpm << "EOF"\n\
+#!/usr/bin/env bash\n\
+set -euo pipefail\n\
+if [[ -d /workspace/ibpm && -f /workspace/ibpm/Makefile ]]; then\n\
+  echo "[ibpm] /workspace/ibpm を検出。ローカルソースからビルドして実行します" >&2\n\
+  make -C /workspace/ibpm >/dev/null\n\
+  exec /workspace/ibpm/build/ibpm "$@"\n\
+else\n\
+  exec '"$IBPM_HOME"'/build/ibpm "$@"\n\
+fi\n\
+EOF\n\
+chmod +x /usr/local/bin/ibpm'
+
 # エントリポイントを同梱
 COPY infra/slurm/bin/entrypoint-ctrl.sh /usr/local/bin/entrypoint-ctrl.sh
 COPY infra/slurm/bin/entrypoint-node.sh /usr/local/bin/entrypoint-node.sh
