@@ -17,7 +17,7 @@ import h5py
 import re
 from pathlib import Path
 from tqdm import tqdm
-from scipy.ndimage import zoom
+# from scipy.ndimage import zoom  # 不要（圧縮処理を削除したため）
 
 
 def parse_tecplot(file_path):
@@ -212,12 +212,12 @@ def sliding_window_split(timeseries, window, stride):
 
 def process_ibpm_output(
     input_dir,
-    coarsen_factor=4,
+    coarsen_factor=1,  # デフォルトを1に変更（圧縮なし）
     window=64,
     stride=8,
 ):
     """
-    IBPM出力ディレクトリを処理
+    IBPM出力ディレクトリを処理（生データをそのまま保存）
 
     Returns:
         samples: (n_samples, window, 2, H, W) のリスト
@@ -248,12 +248,12 @@ def process_ibpm_output(
             data_grid, header = parse_tecplot(plt_file)
             velocity = extract_velocity(data_grid, header)
 
-            if coarsen_factor > 1:
-                velocity = coarsen(velocity, coarsen_factor)
+            # ❌ 圧縮処理を削除
+            # if coarsen_factor > 1:
+            #     velocity = coarsen(velocity, coarsen_factor)
+            # velocity = resize_to_target(velocity, target_size=64)
 
-            # 64×64にリサイズ
-            velocity = resize_to_target(velocity, target_size=64)
-
+            # ✅ 生データをそのまま使用
             timeseries.append(velocity)
 
         except Exception as e:
@@ -263,7 +263,11 @@ def process_ibpm_output(
     # (n_timesteps, 2, H, W)
     timeseries = np.stack(timeseries, axis=0).astype(np.float32)
 
-    print(f"Full timeseries shape: {timeseries.shape}")
+    print(f"\nFull timeseries shape: {timeseries.shape}")
+    print(f"  - Timesteps: {timeseries.shape[0]}")
+    print(f"  - Channels: {timeseries.shape[1]} (u, v)")
+    print(f"  - Spatial resolution: {timeseries.shape[2]}×{timeseries.shape[3]} (original IBPM output)")
+    print("  - No compression applied ✓")
 
     # スライディングウィンドウで分割
     if len(plt_files) >= actual_window:
@@ -382,8 +386,8 @@ def main():
     parser.add_argument(
         '--coarsen',
         type=int,
-        default=4,
-        help='Coarsening factor (default: 4)'
+        default=1,
+        help='Coarsening factor (default: 1, no coarsening)'
     )
     parser.add_argument(
         '--window',
