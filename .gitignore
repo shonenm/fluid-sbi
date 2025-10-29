@@ -105,3 +105,4 @@ Thumbs.db
 .dawgz/*
 .claude/settings.local.json
 .netrc
+/ibpm
