@@ -94,8 +94,12 @@ def parse_tecplot(file_path):
             f"expected {expected_points} (I={I}, J={J}), got {len(data)}"
         )
 
-    # (I*J, n_vars) → (J, I, n_vars) → (I, J, n_vars)
-    data_grid = data.reshape(J, I, -1).transpose(1, 0, 2)
+    # Tecplotは i方向優先（行優先）でデータを出力
+    # データの並び: (i=0,j=0), (i=1,j=0), ..., (i=I-1,j=0), (i=0,j=1), ...
+    # reshape を (J, I) で行うと、最初のI個が最初の行になる
+    # これは data_grid[j, i] = point(i, j) を意味する
+    # (I*J, n_vars) → (J, I, n_vars)
+    data_grid = data.reshape(J, I, -1)
 
     return data_grid, header
 
