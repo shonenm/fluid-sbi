@@ -2,11 +2,22 @@
 """
 IBPM出力をSDA形式に変換するスクリプト
 
+物理的特徴を保持するため、リサイズ処理は行いません。
+画像解像度はIBPM実行時に -nx, -ny で指定してください。
+
+推奨解像度:
+  - 64×64:   計算コスト最小、円柱 D≈16セル（ギリギリ）
+  - 128×128: バランス良好、円柱 D≈32セル（推奨）
+  - 199×199: 最高品質、円柱 D≈50セル（デフォルト）
+
 Usage:
+    # 1. IBPM実行（目標解像度で生成）
+    ibpm -nx 128 -ny 128 -geom cylinder.geom -nsteps 250 -tecplot 1 -outdir output_128
+
+    # 2. HDF5変換（リサイズなし）
     python convert_ibpm_to_sda.py \
-        --input /path/to/ibpm_output_YYYYMMDD_HHMMSS \
-        --output /path/to/sda/data \
-        --coarsen 4 \
+        --input output_128 \
+        --output data_128 \
         --window 64 \
         --stride 8
 """
@@ -17,7 +28,7 @@ import h5py
 import re
 from pathlib import Path
 from tqdm import tqdm
-# from scipy.ndimage import zoom  # 不要（圧縮処理を削除したため）
+# scipy.ndimage.zoom は不要（リサイズ処理を削除）
 
 
 def parse_tecplot(file_path):
@@ -117,19 +128,28 @@ def extract_velocity(data_grid, header):
     return velocity
 
 
+# ⚠️ coarsen関数は保持（オプション機能として）
+# デフォルトでは使用しない（coarsen_factor=1）
 def coarsen(x, r):
     """
-    空間解像度を削減 (r×r平均プーリング)
+    空間解像度を削減 (r×r平均プーリング) - オプション機能
+
+    ⚠️ 注意: 物理的特徴を損失する可能性があります
+    推奨: IBPM側で直接目標解像度を生成してください
+    例: ibpm -nx 128 -ny 128
 
     サイズが割り切れない場合は中央部分をトリミングする
 
     Args:
         x: (C, H, W) または (H, W) の配列
-        r: coarsening factor
+        r: coarsening factor (1 = 圧縮なし)
 
     Returns:
         coarsened: (C, H//r, W//r) または (H//r, W//r)
     """
+    if r == 1:
+        return x  # 圧縮なし
+
     if x.ndim == 2:
         h, w = x.shape
         # トリミング（中央部分を使用）
@@ -159,27 +179,9 @@ def coarsen(x, r):
     return x
 
 
-def resize_to_target(x, target_size=64):
-    """
-    空間解像度を指定サイズにリサイズ（バイリニア補間）
-
-    Args:
-        x: (C, H, W) の配列
-        target_size: 目標解像度 (default: 64)
-
-    Returns:
-        resized: (C, target_size, target_size) の配列
-    """
-    c, h, w = x.shape
-
-    # zoom factorを計算
-    zoom_h = target_size / h
-    zoom_w = target_size / w
-
-    # チャネルごとにリサイズ（order=1 でバイリニア補間）
-    resized = zoom(x, (1, zoom_h, zoom_w), order=1)
-
-    return resized
+# ❌ resize_to_target関数を削除
+# 物理的特徴を保持するため、IBPM側で直接目標解像度を生成する
+# 例: ibpm -nx 128 -ny 128 で128×128の生データを生成
 
 
 def sliding_window_split(timeseries, window, stride):
@@ -248,12 +250,12 @@ def process_ibpm_output(
             data_grid, header = parse_tecplot(plt_file)
             velocity = extract_velocity(data_grid, header)
 
-            # ❌ 圧縮処理を削除
-            # if coarsen_factor > 1:
-            #     velocity = coarsen(velocity, coarsen_factor)
-            # velocity = resize_to_target(velocity, target_size=64)
+            # オプション: coarsen（デフォルトではスキップ）
+            if coarsen_factor > 1:
+                velocity = coarsen(velocity, coarsen_factor)
+                print(f"  Coarsened to {velocity.shape[1]}×{velocity.shape[2]}")
 
-            # ✅ 生データをそのまま使用
+            # ✅ リサイズは行わない（IBPM側で解像度を決定）
             timeseries.append(velocity)
 
         except Exception as e:
