@@ -40,8 +40,15 @@ def inspect_h5_structure(h5_file):
             print(f"    Std: {data.std():.6f}")
             print(f"    NaN count: {np.isnan(data).sum()}")
 
-def plot_h5_samples(h5_file, output_dir, sample_idx=0, time_idx=0):
-    """HDF5データのサンプルをプロット"""
+def plot_h5_samples(h5_file, output_dir, sample_idx=0, time_idx=0,
+                     length=None, xoffset=None, yoffset=None):
+    """HDF5データのサンプルをプロット
+
+    Args:
+        length: x方向の領域長さ (default: アスペクト比から推定)
+        xoffset: x方向のオフセット (default: 円柱中心が適切な位置になるよう推定)
+        yoffset: y方向のオフセット (default: 円柱中心が適切な位置になるよう推定)
+    """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -50,6 +57,28 @@ def plot_h5_samples(h5_file, output_dir, sample_idx=0, time_idx=0):
 
     print(f"\nData shape: {data.shape}")
     T, N, C, H, W = data.shape
+
+    # 領域サイズを推定（アスペクト比から）
+    # IBPMではグリッド間隔が等方的(dx=dy)なので、アスペクト比からlengthを計算
+    aspect_ratio = W / H
+    if length is None:
+        # デフォルト: y方向の長さはH方向のセル数に比例
+        # 基準: 200セルで4.0 → 1セルあたり0.02
+        # ただし、円柱(0,0)が適切な位置になるよう、dy=dx=0.04と仮定（ワイドドメイン）
+        # y_length = H * dy ≈ H * (length / W)
+        # 暫定的にアスペクト比から推定: x_length : y_length = W : H
+        # 基準として x_length=16, y_length=8 (アスペクト比2:1) を想定
+        length = 16.0  # デフォルトのx方向長さ
+    if xoffset is None:
+        # 円柱中心(0,0)が適切な位置になるよう推定
+        # 円柱は通常左から1/4の位置にある
+        xoffset = -length / 4
+    # y_lengthをアスペクト比から計算（dx=dyの等方的グリッド）
+    y_length = length / aspect_ratio
+    if yoffset is None:
+        # IBPMのデフォルト: 円柱中心(0,0)を中央に配置
+        # y範囲は [-4, 4] となる（yoffset=-4でy_length=8）
+        yoffset = -4.0
 
     # サンプルを取得
     if time_idx >= T:
@@ -70,24 +99,21 @@ def plot_h5_samples(h5_file, output_dir, sample_idx=0, time_idx=0):
 
     # 渦度を計算（中心差分、グリッド間隔を考慮）
     # ω = ∂v/∂x - ∂u/∂y
-    dx = 4.0 / (W + 1)
-    dy = 4.0 / (H + 1)
+    # グリッド間隔（等方的: dx = dy）
+    dx = length / (W + 1)
+    dy = y_length / (H + 1)
     vort = np.zeros_like(u)
     # 中心差分: ∂v/∂x ≈ (v[i+1] - v[i-1]) / (2*dx)
     vort[1:-1, 1:-1] = (v[1:-1, 2:] - v[1:-1, :-2]) / (2*dx) - (u[2:, 1:-1] - u[:-2, 1:-1]) / (2*dy)
 
     # プロット
-    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+    fig, axes = plt.subplots(2, 2, figsize=(16, 14))
     fig.suptitle(f'HDF5 Data - Time={time_idx}, Sample={sample_idx}\n'
-                 f'Resolution: {H}×{W}', fontsize=16, fontweight='bold')
+                 f'Resolution: {H}×{W}, Domain: x∈[{xoffset:.1f}, {xoffset+length:.1f}]', fontsize=16, fontweight='bold')
 
     # 座標グリッドを作成（IBPMのセル中心座標）
-    # IBPMは nx=128 で [-2, 2] の領域を分割
-    # セル中心は (i+0.5)*dx + xoffset
-    dx = 4.0 / (W + 1)  # W+1 セルで 4.0 の長さ
-    dy = 4.0 / (H + 1)
-    x = np.arange(W) * dx - 2.0 + dx/2  # セル中心
-    y = np.arange(H) * dy - 2.0 + dy/2
+    x = np.arange(W) * dx + xoffset + dx/2  # セル中心
+    y = np.arange(H) * dy + yoffset + dy/2
     X, Y = np.meshgrid(x, y)
 
     # 円柱マスク（中心=(0,0), 半径=0.5）
@@ -108,6 +134,7 @@ def plot_h5_samples(h5_file, output_dir, sample_idx=0, time_idx=0):
     ax.set_ylabel('y', fontsize=12)
     ax.set_title('Velocity Magnitude |u|', fontsize=14)
     ax.set_aspect('equal')
+    ax.set_ylim(-4, 4)
     ax.grid(True, alpha=0.3)
     plt.colorbar(im0, ax=ax, label='|u|')
 
@@ -121,6 +148,7 @@ def plot_h5_samples(h5_file, output_dir, sample_idx=0, time_idx=0):
     ax.set_ylabel('y', fontsize=12)
     ax.set_title('u-velocity', fontsize=14)
     ax.set_aspect('equal')
+    ax.set_ylim(-4, 4)
     ax.grid(True, alpha=0.3)
     plt.colorbar(im1, ax=ax, label='u')
 
@@ -134,6 +162,7 @@ def plot_h5_samples(h5_file, output_dir, sample_idx=0, time_idx=0):
     ax.set_ylabel('y', fontsize=12)
     ax.set_title('v-velocity', fontsize=14)
     ax.set_aspect('equal')
+    ax.set_ylim(-4, 4)
     ax.grid(True, alpha=0.3)
     plt.colorbar(im2, ax=ax, label='v')
 
@@ -148,6 +177,7 @@ def plot_h5_samples(h5_file, output_dir, sample_idx=0, time_idx=0):
     ax.set_ylabel('y', fontsize=12)
     ax.set_title('Vorticity ω (approximate)', fontsize=14)
     ax.set_aspect('equal')
+    ax.set_ylim(-4, 4)
     ax.grid(True, alpha=0.3)
     plt.colorbar(im3, ax=ax, label='ω')
 
@@ -160,7 +190,8 @@ def plot_h5_samples(h5_file, output_dir, sample_idx=0, time_idx=0):
     print(f"Saved: {output_file}")
     plt.close()
 
-def plot_time_series(h5_file, output_dir, sample_idx=0, time_indices=None):
+def plot_time_series(h5_file, output_dir, sample_idx=0, time_indices=None,
+                     length=None, xoffset=None, yoffset=None):
     """時系列の発展をプロット"""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -170,23 +201,33 @@ def plot_time_series(h5_file, output_dir, sample_idx=0, time_indices=None):
 
     T, N, C, H, W = data.shape
 
+    # 領域サイズを推定（dx=dyの等方的グリッド）
+    aspect_ratio = W / H
+    if length is None:
+        length = 16.0  # デフォルトのx方向長さ
+    y_length = length / aspect_ratio  # アスペクト比から計算
+    if xoffset is None:
+        xoffset = -length / 4
+    if yoffset is None:
+        yoffset = -4.0  # IBPMデフォルト（円柱中心を中央に配置）
+
     if time_indices is None:
         # 均等に5時刻を選択
         time_indices = np.linspace(0, T-1, min(5, T), dtype=int)
 
     n_times = len(time_indices)
-    fig, axes = plt.subplots(n_times, 3, figsize=(16, 5*n_times))
+    fig, axes = plt.subplots(n_times, 3, figsize=(20, 4*n_times))
     if n_times == 1:
         axes = axes.reshape(1, -1)
 
-    fig.suptitle(f'HDF5 Time Series - Sample {sample_idx}\nResolution: {H}×{W}',
+    fig.suptitle(f'HDF5 Time Series - Sample {sample_idx}\nResolution: {H}×{W}, Domain: x∈[{xoffset:.1f}, {xoffset+length:.1f}]',
                  fontsize=16, fontweight='bold')
 
     # 座標グリッド（IBPMのセル中心座標）
-    dx = 4.0 / (W + 1)
-    dy = 4.0 / (H + 1)
-    x = np.arange(W) * dx - 2.0 + dx/2
-    y = np.arange(H) * dy - 2.0 + dy/2
+    dx = length / (W + 1)
+    dy = y_length / (H + 1)
+    x = np.arange(W) * dx + xoffset + dx/2
+    y = np.arange(H) * dy + yoffset + dy/2
     X, Y = np.meshgrid(x, y)
 
     for i, t_idx in enumerate(time_indices):
@@ -195,7 +236,7 @@ def plot_time_series(h5_file, output_dir, sample_idx=0, time_indices=None):
         v = sample[1]
         speed = np.sqrt(u**2 + v**2)
 
-        # 渦度（中心差分、グリッド間隔を考慮）
+        # 渦度（中心差分）
         vort = np.zeros_like(u)
         vort[1:-1, 1:-1] = (v[1:-1, 2:] - v[1:-1, :-2]) / (2*dx) - (u[2:, 1:-1] - u[:-2, 1:-1]) / (2*dy)
 
@@ -208,6 +249,7 @@ def plot_time_series(h5_file, output_dir, sample_idx=0, time_indices=None):
         if i == 0:
             ax.set_title('Velocity Magnitude', fontsize=14)
         ax.set_aspect('equal')
+        ax.set_ylim(-4, 4)
         plt.colorbar(im0, ax=ax)
 
         # u成分
@@ -218,6 +260,7 @@ def plot_time_series(h5_file, output_dir, sample_idx=0, time_indices=None):
         if i == 0:
             ax.set_title('u-velocity', fontsize=14)
         ax.set_aspect('equal')
+        ax.set_ylim(-4, 4)
         plt.colorbar(im1, ax=ax)
 
         # 渦度
@@ -229,6 +272,7 @@ def plot_time_series(h5_file, output_dir, sample_idx=0, time_indices=None):
         if i == 0:
             ax.set_title('Vorticity', fontsize=14)
         ax.set_aspect('equal')
+        ax.set_ylim(-4, 4)
         plt.colorbar(im2, ax=ax)
 
     plt.tight_layout()

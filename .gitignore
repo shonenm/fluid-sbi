@@ -106,3 +106,7 @@ Thumbs.db
 .claude/settings.local.json
 .netrc
 /ibpm
+
+# Generated figures (notebook outputs)
+/ibpm_*.png
+/kolmo_*.png
