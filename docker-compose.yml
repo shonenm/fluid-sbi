@@ -4,11 +4,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+        USERNAME: ${USERNAME:-devuser}
     image: fluid-sbi:base
     container_name: fluid-sbi-dev
     hostname: sda-dev
     command: ["/usr/local/bin/entrypoint-dev.sh"]
-    working_dir: /workspace
+    working_dir: /home/${USERNAME:-devuser}/fluid-sbi
     deploy:
       resources:
         reservations:
@@ -17,19 +21,34 @@ services:
               capabilities: [gpu]
               count: all
     volumes:
-      - .:/workspace
-      - ./data:/workspace/data
-      - ./results:/workspace/results
+      - .:/home/${USERNAME:-devuser}/fluid-sbi
+      - ./data:/home/${USERNAME:-devuser}/fluid-sbi/data
+      - ./results:/home/${USERNAME:-devuser}/fluid-sbi/results
       # MUNGE 鍵（named volume）を共有
       - munge:/etc/munge
       # Slurm 設定を読み取り専用で共有
       - ./infra/slurm/config/slurm.conf:/etc/slurm/slurm.conf:ro
       - ./infra/slurm/config/gres.conf:/etc/slurm/gres.conf:ro
+      # Git設定（ホストから読み取り専用でマウント）
+      - type: bind
+        source: ${HOME}/.gitconfig
+        target: /home/${USERNAME:-devuser}/.gitconfig
+        read_only: true
+      # SSH設定（ホストから読み取り専用でマウント）
+      - type: bind
+        source: ${HOME}/.ssh/config
+        target: /home/${USERNAME:-devuser}/.ssh/config
+        read_only: true
+      # SSHエージェントソケット
+      - type: bind
+        source: ${SSH_AUTH_SOCK}
+        target: /ssh-agent/agent.sock
+        read_only: true
     environment:
-      - PYTHONPATH=/workspace:/workspace/sda
-      - PYTHONPATH=/workspace:/workspace/sda:/workspace/extensions
+      - PYTHONPATH=/home/${USERNAME:-devuser}/fluid-sbi:/home/${USERNAME:-devuser}/fluid-sbi/sda:/home/${USERNAME:-devuser}/fluid-sbi/extensions
       - VIRTUAL_ENV=/opt/venv
       - PATH=/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - SSH_AUTH_SOCK=/ssh-agent/agent.sock
       - WANDB_API_KEY=${WANDB_API_KEY:-}
       - WANDB_PROJECT=${WANDB_PROJECT:-fluid-sbi-experiments}
       - WANDB_ENTITY=${WANDB_ENTITY:-}
@@ -43,6 +62,7 @@ services:
     image: fluid-sbi:base
     container_name: slurmctld
     hostname: slurmctld
+    user: "${UID:-1000}:${GID:-1000}"
     command: ["/usr/local/bin/entrypoint-ctrl.sh"]
     volumes:
       - munge:/etc/munge
@@ -59,6 +79,7 @@ services:
     image: fluid-sbi:base
     container_name: slurmd
     hostname: slurmd
+    user: "${UID:-1000}:${GID:-1000}"
     command: ["/usr/local/bin/entrypoint-node.sh"]
     # Docker 20.10+ ならこれで OK（Swarm ではないので deploy: は不要）
     gpus: all
@@ -69,12 +90,11 @@ services:
       - ./infra/slurm/config/cgroup.conf:/etc/slurm/cgroup.conf:ro
       - slurmd_state:/var/spool/slurmd
       - slurm_logs:/var/log/slurm
-      - .:/workspace
-      - ./data:/workspace/data
-      - ./results:/workspace/results
+      - .:/home/${USERNAME:-devuser}/fluid-sbi
+      - ./data:/home/${USERNAME:-devuser}/fluid-sbi/data
+      - ./results:/home/${USERNAME:-devuser}/fluid-sbi/results
     environment:
-      - PYTHONPATH=/workspace:/workspace/sda
-      - PYTHONPATH=/workspace:/workspace/sda:/workspace/extensions
+      - PYTHONPATH=/home/${USERNAME:-devuser}/fluid-sbi:/home/${USERNAME:-devuser}/fluid-sbi/sda:/home/${USERNAME:-devuser}/fluid-sbi/extensions
     restart: unless-stopped
     networks: [slurmnet]
     depends_on: [slurmctld]

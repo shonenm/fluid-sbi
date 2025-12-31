@@ -5,21 +5,45 @@ FROM python:3.10-slim
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+# ============================================================
+# ビルド引数（UID/GID/USERNAME）
+# ============================================================
+ARG UID=1000
+ARG GID=1000
+ARG USERNAME=devuser
 
 # ============================================================
 # OS基本ツールとロケール設定
 # ============================================================
 # 開発に必要な基本的なOSツールとSSH、日本語ロケールを設定
+# dotfilesで入れるツール（vim, htop, tree, tmux等）は含めない
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash zsh git tmux build-essential wget curl vim htop tree locales \
+    bash zsh git sudo build-essential wget curl locales gnupg \
     openssh-client openssh-server ca-certificates \
  && sed -i 's/^# *ja_JP.UTF-8/ja_JP.UTF-8/' /etc/locale.gen \
  && locale-gen \
  && rm -rf /var/lib/apt/lists/*
 
-ENV LANG=ja_JP.UTF-8 LC_ALL=ja_JP.UTF-8 LANGUAGE=ja_JP:ja TZ=Asia/Tokyo TERM=xterm
+ENV LANG=ja_JP.UTF-8 LC_ALL=ja_JP.UTF-8 LANGUAGE=ja_JP:ja TZ=Asia/Tokyo TERM=xterm-256color
 
-WORKDIR /workspace
+# ============================================================
+# 非rootユーザー作成
+# ============================================================
+RUN groupadd --gid $GID $USERNAME \
+ && useradd --uid $UID --gid $GID -m $USERNAME \
+ && echo "$USERNAME ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
+ && chmod 0440 /etc/sudoers.d/$USERNAME \
+ && usermod --shell /usr/bin/zsh $USERNAME
+
+# Git safe.directory設定
+RUN git config --global --add safe.directory '*'
+
+# SSH known_hosts事前設定
+RUN mkdir -p /home/$USERNAME/.ssh \
+ && ssh-keyscan github.com gitlab.com >> /home/$USERNAME/.ssh/known_hosts \
+ && chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
+
+WORKDIR /home/$USERNAME/fluid-sbi
 
 
 # ============================================================
@@ -29,7 +53,9 @@ WORKDIR /workspace
 RUN python -m venv /opt/venv
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ENV PYTHONPATH=/workspace:/workspace/sda
+
+# 仮想環境の所有者をdevuserに変更
+RUN chown -R $USERNAME:$USERNAME /opt/venv
 
 
 # ============================================================
@@ -37,6 +63,17 @@ ENV PYTHONPATH=/workspace:/workspace/sda
 # ============================================================
 ENV UV_INSTALL_DIR=/usr/local/bin
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && uv --version
+
+
+# ============================================================
+# 1Password CLI (dotfilesで使用)
+# ============================================================
+RUN curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
+    gpg --dearmor --output /usr/share/keyrings/1password-archive-keyring.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/amd64 stable main" | \
+    tee /etc/apt/sources.list.d/1password.list && \
+    apt-get update && apt-get install -y 1password-cli && \
+    rm -rf /var/lib/apt/lists/*
 
 
 # ============================================================
@@ -72,19 +109,20 @@ RUN git clone --depth=1 https://github.com/cwrowley/ibpm.git $IBPM_HOME \
 # IBPM実行用ラッパースクリプトの作成
 # ============================================================
 # どこからでも`ibpm`を実行可能にする
-# /workspace/ibpmがある場合はそちらを優先ビルド→実行（拡張しやすい）
-RUN bash -lc 'cat > /usr/local/bin/ibpm << "EOF"\n\
-#!/usr/bin/env bash\n\
-set -euo pipefail\n\
-if [[ -d /workspace/ibpm && -f /workspace/ibpm/Makefile ]]; then\n\
-  echo "[ibpm] /workspace/ibpm を検出。ローカルソースからビルドして実行します" >&2\n\
-  make -C /workspace/ibpm >/dev/null\n\
-  exec /workspace/ibpm/build/ibpm "$@"\n\
-else\n\
-  exec '"$IBPM_HOME"'/build/ibpm "$@"\n\
-fi\n\
-EOF\n\
-chmod +x /usr/local/bin/ibpm'
+# $HOME/fluid-sbi/ibpmがある場合はそちらを優先ビルド→実行（拡張しやすい）
+RUN printf '%s\n' \
+    '#!/usr/bin/env bash' \
+    'set -euo pipefail' \
+    'LOCAL_IBPM="${HOME}/fluid-sbi/ibpm"' \
+    'if [[ -d "$LOCAL_IBPM" && -f "$LOCAL_IBPM/Makefile" ]]; then' \
+    '  echo "[ibpm] $LOCAL_IBPM を検出。ローカルソースからビルドして実行します" >&2' \
+    '  make -C "$LOCAL_IBPM" >/dev/null' \
+    '  exec "$LOCAL_IBPM/build/ibpm" "$@"' \
+    'else' \
+    '  exec /opt/ibpm/build/ibpm "$@"' \
+    'fi' \
+    > /usr/local/bin/ibpm \
+ && chmod +x /usr/local/bin/ibpm
 
 
 # ============================================================
@@ -98,44 +136,12 @@ RUN chmod +x /usr/local/bin/entrypoint-*.sh
 
 
 # ============================================================
-# CLI快適化: Oh My Zshとプラグイン（オプション）
-# ============================================================
-# Zshをデフォルトシェルに設定し、テーマとプラグインをインストール
-RUN git clone https://github.com/ohmyzsh/ohmyzsh ~/.oh-my-zsh \
- && cp ~/.oh-my-zsh/templates/zshrc.zsh-template ~/.zshrc \
- && usermod --shell /usr/bin/zsh root \
- && sed -i 's/ZSH_THEME=".*"/ZSH_THEME="robbyrussell"/' ~/.zshrc \
- && sed -i 's/plugins=(git)/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' ~/.zshrc \
- && echo 'alias ll="ls -lah"' >> ~/.zshrc \
- && echo 'export EDITOR=vim' >> ~/.zshrc \
- && git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions \
- && git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-
-
-# ============================================================
-# CLI快適化: lazygit（オプション）
-# ============================================================
-# Git操作のためのターミナルUIツール
-RUN LAZYGIT_VERSION=0.41.0 \
- && ARCH=$(dpkg --print-architecture | sed 's/amd64/x86_64/;s/arm64/aarch64/') \
- && curl -Lo /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_${ARCH}.tar.gz" \
- && tar -C /tmp -xf /tmp/lazygit.tar.gz lazygit \
- && install /tmp/lazygit /usr/local/bin \
- && rm -f /tmp/lazygit.tar.gz /tmp/lazygit
-
-
-# ============================================================
-# Node.jsとClaude Code CLI（オプション）
-# ============================================================
-# AI支援開発ツールClaude Codeのインストール
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
- && apt-get install -y --no-install-recommends nodejs \
- && npm i -g @anthropic-ai/claude-code \
- && rm -rf /var/lib/apt/lists/*
-
-
-# ============================================================
 # ポート公開
 # ============================================================
 # 8888: Jupyter, 6006: TensorBoard, 8000: 汎用Webサーバー
 EXPOSE 8888 6006 8000
+
+# ============================================================
+# デフォルトユーザー
+# ============================================================
+USER $USERNAME

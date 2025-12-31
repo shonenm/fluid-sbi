@@ -2,10 +2,15 @@
   "name": "Fluid SBI Development Environment",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "sda-dev",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/home/devuser/fluid-sbi",
 
   // ← これ超重要：compose の command/entrypoint を上書きしない
   "overrideCommand": false,
+
+  // ホストのSSHエージェントを使用
+  "remoteEnv": {
+    "SSH_AUTH_SOCK": "/ssh-agent/agent.sock"
+  },
 
   "customizations": {
     "vscode": {
@@ -15,9 +20,9 @@
 
         // sda（submodule）＆ extensions を補完/型解決に含める
         "python.analysis.extraPaths": [
-          "/workspace",
-          "/workspace/sda",
-          "/workspace/extensions"
+          "/home/devuser/fluid-sbi",
+          "/home/devuser/fluid-sbi/sda",
+          "/home/devuser/fluid-sbi/extensions"
         ],
 
         // 今回はJupyterを使わない想定（使うならこのままでOK）
@@ -54,6 +59,6 @@
   // Jupyter は使わない前提だが、ポート転送を残すのは無害
   "forwardPorts": [8888, 6006, 8000],
 
-  // すでに compose の service で root 想定
-  "remoteUser": "root"
+  // devuserで実行
+  "remoteUser": "devuser"
 }
