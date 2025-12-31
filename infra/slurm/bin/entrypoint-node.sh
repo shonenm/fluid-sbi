@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
-mkdir -p /etc/munge /var/log/munge /var/run/munge /var/spool/slurmd /var/log/slurm
-chown -R munge:munge /etc/munge /var/log/munge /var/run/munge || true
-chown -R root:root /var/spool/slurmd /var/log/slurm
-munged -f -v &
+
+# devuserで実行されるため、sudoを使用
+sudo mkdir -p /etc/munge /var/log/munge /var/run/munge /var/spool/slurmd /var/log/slurm
+
+sudo chown -R munge:munge /etc/munge /var/log/munge /var/run/munge || true
+sudo chown -R "$(id -u):$(id -g)" /var/spool/slurmd /var/log/slurm
+
+sudo munged -f -v &
 sleep 1
-exec slurmd -Dvvv
+
+exec sudo slurmd -Dvvv
