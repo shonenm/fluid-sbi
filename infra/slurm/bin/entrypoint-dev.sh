@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# ワークスペースの.envを読み込む
+WORKSPACE_ENV="$HOME/fluid-sbi/.env"
+if [ -f "$WORKSPACE_ENV" ]; then
+  echo "[dev] loading $WORKSPACE_ENV"
+  set -a
+  source "$WORKSPACE_ENV"
+  set +a
+fi
+
 # devuserで実行されるため、sudoを使用
 sudo mkdir -p /etc/munge /var/log/munge /var/run/munge
 
