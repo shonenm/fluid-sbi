@@ -10,6 +10,10 @@ if [ -f "$WORKSPACE_ENV" ]; then
   set +a
 fi
 
+# SSHエージェントソケット（コンテナ内の固定パス）
+export SSH_AUTH_SOCK=/ssh-agent/agent.sock
+echo "[dev] SSH_AUTH_SOCK: $SSH_AUTH_SOCK"
+
 # devuserで実行されるため、sudoを使用
 sudo mkdir -p /etc/munge /var/log/munge /var/run/munge
 
