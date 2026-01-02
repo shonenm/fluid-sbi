@@ -17,8 +17,19 @@ echo "[dev] SSH_AUTH_SOCK: $SSH_AUTH_SOCK"
 # devuserで実行されるため、sudoを使用
 sudo mkdir -p /etc/munge /var/log/munge /var/run/munge
 
+# mungeキーが存在するまで待機（最大30秒）
+# ctrlコンテナがmungeキーを生成する責任を持つ
+echo "[dev] waiting for munge.key..."
+for i in {1..30}; do
+  if [ -f /etc/munge/munge.key ]; then
+    echo "[dev] munge.key found"
+    break
+  fi
+  sleep 1
+done
+
 if [ ! -f /etc/munge/munge.key ]; then
-  echo "[dev] generating /etc/munge/munge.key"
+  echo "[dev] WARNING: munge.key not found, generating locally (SLURM may not work correctly)"
   sudo openssl rand -out /etc/munge/munge.key -base64 32
   sudo chmod 600 /etc/munge/munge.key
 fi

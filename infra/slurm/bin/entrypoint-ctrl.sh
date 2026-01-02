@@ -11,9 +11,12 @@ if [ ! -f /etc/munge/munge.key ]; then
 fi
 
 sudo chown -R munge:munge /etc/munge /var/log/munge /var/run/munge || true
+# ディレクトリを755にして他コンテナがファイル存在確認できるようにする（キーは600のまま）
+sudo chmod 755 /etc/munge
 sudo chown -R "$(id -u):$(id -g)" /var/spool/slurmctld /var/log/slurm
 
 sudo munged -f -v &
 sleep 1
 
-exec sudo slurmctld -Dvvv
+# SlurmUser=devuserに合わせてsudoなしで実行
+exec slurmctld -Dvvv

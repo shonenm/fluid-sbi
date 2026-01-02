@@ -5,8 +5,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        UID: ${UID:-1000}
-        GID: ${GID:-1000}
+        UID: ${USER_UID:-1000}
+        GID: ${USER_GID:-1000}
         USERNAME: ${USERNAME:-devuser}
     image: fluid-sbi:base
     container_name: fluid-sbi-dev
@@ -63,7 +63,7 @@ services:
     image: fluid-sbi:base
     container_name: slurmctld
     hostname: slurmctld
-    user: "${UID:-1000}:${GID:-1000}"
+    user: "${USER_UID:-1000}:${USER_GID:-1000}"
     command: ["/usr/local/bin/entrypoint-ctrl.sh"]
     volumes:
       - munge:/etc/munge
@@ -80,7 +80,7 @@ services:
     image: fluid-sbi:base
     container_name: slurmd
     hostname: slurmd
-    user: "${UID:-1000}:${GID:-1000}"
+    user: "${USER_UID:-1000}:${USER_GID:-1000}"
     command: ["/usr/local/bin/entrypoint-node.sh"]
     # Docker 20.10+ ならこれで OK（Swarm ではないので deploy: は不要）
     gpus: all
