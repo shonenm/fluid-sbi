@@ -1,5 +1,5 @@
 {
-  "name": "Fluid SBI Development Environment",
+  "name": "fluid-sbi",
   "dockerComposeFile": "../compose.yml",
   "service": "sda-dev",
   "workspaceFolder": "/home/devuser/fluid-sbi",
@@ -10,6 +10,11 @@
   // ホストのSSHエージェントを使用
   "remoteEnv": {
     "SSH_AUTH_SOCK": "/ssh-agent/agent.sock"
+  },
+
+  // コンテナ環境変数
+  "containerEnv": {
+    "DEVCONTAINER_NAME": "fluid-sbi"
   },
 
   "customizations": {

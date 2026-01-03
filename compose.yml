@@ -9,7 +9,7 @@ services:
         GID: ${USER_GID:-1000}
         USERNAME: ${USERNAME:-devuser}
     image: fluid-sbi:base
-    container_name: fluid-sbi-dev
+    container_name: fluid-sbi
     hostname: sda-dev
     command: ["/usr/local/bin/entrypoint-dev.sh"]
     working_dir: /home/${USERNAME:-devuser}/fluid-sbi
