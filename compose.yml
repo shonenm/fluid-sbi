@@ -44,6 +44,8 @@ services:
         source: ${SSH_AUTH_SOCK}
         target: /ssh-agent/agent.sock
         read_only: true
+      # Claude Code status監視用
+      - /tmp/claude_status:/tmp/claude_status
     environment:
       - DEVCONTAINER_NAME=fluid-sbi
       - PYTHONPATH=/home/${USERNAME:-devuser}/fluid-sbi:/home/${USERNAME:-devuser}/fluid-sbi/sda:/home/${USERNAME:-devuser}/fluid-sbi/extensions

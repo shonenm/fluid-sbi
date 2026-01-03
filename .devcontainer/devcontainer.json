@@ -1,6 +1,6 @@
 {
   "name": "Fluid SBI Development Environment",
-  "dockerComposeFile": "../docker-compose.yml",
+  "dockerComposeFile": "../compose.yml",
   "service": "sda-dev",
   "workspaceFolder": "/home/devuser/fluid-sbi",
 
