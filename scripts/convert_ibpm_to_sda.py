@@ -334,8 +334,10 @@ def create_sda_dataset(
 
         output_file = output_path / f'{split_name}.h5'
 
-        # データをスタック
+        # データをスタック: (N, T, C, H, W)
         data = np.stack(data_list, axis=0)
+        # 転置して (T, N, C, H, W) に変換（IBPMDatasetが期待する形式）
+        data = np.transpose(data, (1, 0, 2, 3, 4))
 
         with h5py.File(output_file, 'w') as f:
             dset = f.create_dataset(
@@ -348,7 +350,7 @@ def create_sda_dataset(
 
             # 属性を追加
             dset.attrs['description'] = 'IBPM velocity field data (u, v)'
-            dset.attrs['shape_description'] = '(n_samples, n_timesteps, n_channels, height, width)'
+            dset.attrs['shape_description'] = '(n_timesteps, n_samples, n_channels, height, width)'
             dset.attrs['channels'] = 'u, v'
 
             print(f"{split_name}: {dset.shape} -> {output_file}")
