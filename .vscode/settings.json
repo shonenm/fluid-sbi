@@ -1,0 +1,49 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+
+  // Pylance (Pyright) Type Checking
+  "python.languageServer": "Pylance",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.inlayHints.functionReturnTypes": true,
+  "python.analysis.inlayHints.variableTypes": false,
+  "python.analysis.inlayHints.pytestParameters": true,
+
+  // Pyright settings (matches pyproject.toml)
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingTypeStubs": "none",
+    "reportUnknownMemberType": "none",
+    "reportUnknownParameterType": "none",
+    "reportUnknownArgumentType": "none",
+    "reportMissingParameterType": "none",
+    "reportPrivateUsage": "none",
+    "reportArgumentType": "none",
+    "reportAssignmentType": "none",
+    "reportAttributeAccessIssue": "none",
+    "reportReturnType": "none",
+    "reportIndexIssue": "none",
+    "reportOptionalMemberAccess": "none",
+    "reportPossiblyUnboundVariable": "none",
+    "reportGeneralTypeIssues": "none",
+    "reportOptionalCall": "none",
+    "reportCallIssue": "none"
+  },
+
+  // Ruff (replaces black, isort, flake8)
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+
+  // Editor settings for Python
+  "editor.rulers": [120],
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true
+}
