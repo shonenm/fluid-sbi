@@ -9,25 +9,26 @@ Usage:
 """
 
 import argparse
-import numpy as np
+from pathlib import Path
+
 import h5py
 import matplotlib.pyplot as plt
-from pathlib import Path
+import numpy as np
 
 
 def load_data(file_path):
     """HDF5ファイルからデータを読み込む"""
-    with h5py.File(file_path, 'r') as f:
-        data = f['x'][:]
-        attrs = dict(f['x'].attrs)
+    with h5py.File(file_path, "r") as f:
+        data = f["x"][:]
+        attrs = dict(f["x"].attrs)
     return data, attrs
 
 
 def print_statistics(data):
     """データの統計情報を表示"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("データ統計情報")
-    print("="*60)
+    print("=" * 60)
     print(f"形状: {data.shape}")
     print(f"  - サンプル数: {data.shape[0]}")
     print(f"  - 時系列長: {data.shape[1]}")
@@ -44,21 +45,21 @@ def print_statistics(data):
     u = data[:, :, 0, :, :]
     v = data[:, :, 1, :, :]
 
-    print(f"\nu速度 (チャネル0):")
+    print("\nu速度 (チャネル0):")
     print(f"  範囲: [{u.min():.6f}, {u.max():.6f}]")
     print(f"  平均: {u.mean():.6f}, 標準偏差: {u.std():.6f}")
 
-    print(f"\nv速度 (チャネル1):")
+    print("\nv速度 (チャネル1):")
     print(f"  範囲: [{v.min():.6f}, {v.max():.6f}]")
     print(f"  平均: {v.mean():.6f}, 標準偏差: {v.std():.6f}")
 
     # 速度の大きさ
     velocity_magnitude = np.sqrt(u**2 + v**2)
-    print(f"\n速度の大きさ:")
+    print("\n速度の大きさ:")
     print(f"  範囲: [{velocity_magnitude.min():.6f}, {velocity_magnitude.max():.6f}]")
     print(f"  平均: {velocity_magnitude.mean():.6f}")
 
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
 
 
 def check_temporal_continuity(data):
@@ -70,7 +71,7 @@ def check_temporal_continuity(data):
 
     time_diffs = []
     for t in range(1, len(sample0)):
-        diff = np.abs(sample0[t] - sample0[t-1]).mean()
+        diff = np.abs(sample0[t] - sample0[t - 1]).mean()
         time_diffs.append(diff)
 
     print(f"  平均差分: {np.mean(time_diffs):.6f}")
@@ -108,7 +109,7 @@ def check_energy_conservation(data):
 
     # エネルギーの相対変化
     energy_change = (energy_sample0.max() - energy_sample0.min()) / energy_sample0.mean()
-    print(f"  相対変化: {energy_change*100:.2f}%")
+    print(f"  相対変化: {energy_change * 100:.2f}%")
 
     if energy_change < 0.3:
         print("  結果: ✓ エネルギーがほぼ保存されている")
@@ -139,7 +140,7 @@ def visualize_samples(data, output_path, n_samples=3):
     # ランダムにサンプルを選択
     sample_indices = np.random.choice(n_total, size=n_samples, replace=False)
 
-    fig, axes = plt.subplots(n_samples, 4, figsize=(16, 4*n_samples))
+    fig, axes = plt.subplots(n_samples, 4, figsize=(16, 4 * n_samples))
 
     if n_samples == 1:
         axes = axes.reshape(1, -1)
@@ -155,31 +156,31 @@ def visualize_samples(data, output_path, n_samples=3):
         velocity_mag = np.sqrt(u**2 + v**2)
 
         # u速度
-        im0 = axes[i, 0].imshow(u, cmap='RdBu_r', origin='lower')
-        axes[i, 0].set_title(f'Sample {idx}, t={t}: u velocity')
-        axes[i, 0].axis('off')
+        im0 = axes[i, 0].imshow(u, cmap="RdBu_r", origin="lower")
+        axes[i, 0].set_title(f"Sample {idx}, t={t}: u velocity")
+        axes[i, 0].axis("off")
         plt.colorbar(im0, ax=axes[i, 0])
 
         # v速度
-        im1 = axes[i, 1].imshow(v, cmap='RdBu_r', origin='lower')
-        axes[i, 1].set_title(f'Sample {idx}, t={t}: v velocity')
-        axes[i, 1].axis('off')
+        im1 = axes[i, 1].imshow(v, cmap="RdBu_r", origin="lower")
+        axes[i, 1].set_title(f"Sample {idx}, t={t}: v velocity")
+        axes[i, 1].axis("off")
         plt.colorbar(im1, ax=axes[i, 1])
 
         # 渦度
-        im2 = axes[i, 2].imshow(vorticity, cmap='RdBu_r', origin='lower')
-        axes[i, 2].set_title(f'Sample {idx}, t={t}: Vorticity')
-        axes[i, 2].axis('off')
+        im2 = axes[i, 2].imshow(vorticity, cmap="RdBu_r", origin="lower")
+        axes[i, 2].set_title(f"Sample {idx}, t={t}: Vorticity")
+        axes[i, 2].axis("off")
         plt.colorbar(im2, ax=axes[i, 2])
 
         # 速度の大きさ
-        im3 = axes[i, 3].imshow(velocity_mag, cmap='viridis', origin='lower')
-        axes[i, 3].set_title(f'Sample {idx}, t={t}: |v|')
-        axes[i, 3].axis('off')
+        im3 = axes[i, 3].imshow(velocity_mag, cmap="viridis", origin="lower")
+        axes[i, 3].set_title(f"Sample {idx}, t={t}: |v|")
+        axes[i, 3].axis("off")
         plt.colorbar(im3, ax=axes[i, 3])
 
     plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
     print(f"  保存: {output_path}")
 
 
@@ -195,35 +196,35 @@ def plot_time_series(data, energy_time_series, output_path):
     v_mean = sample0[:, 1, :, :].mean(axis=(1, 2))
 
     # u速度の時間変化
-    axes[0, 0].plot(u_mean, label='u (spatial mean)')
-    axes[0, 0].set_xlabel('Time step')
-    axes[0, 0].set_ylabel('u velocity')
-    axes[0, 0].set_title('u velocity time series (Sample 0)')
+    axes[0, 0].plot(u_mean, label="u (spatial mean)")
+    axes[0, 0].set_xlabel("Time step")
+    axes[0, 0].set_ylabel("u velocity")
+    axes[0, 0].set_title("u velocity time series (Sample 0)")
     axes[0, 0].grid(True)
     axes[0, 0].legend()
 
     # v速度の時間変化
-    axes[0, 1].plot(v_mean, label='v (spatial mean)', color='orange')
-    axes[0, 1].set_xlabel('Time step')
-    axes[0, 1].set_ylabel('v velocity')
-    axes[0, 1].set_title('v velocity time series (Sample 0)')
+    axes[0, 1].plot(v_mean, label="v (spatial mean)", color="orange")
+    axes[0, 1].set_xlabel("Time step")
+    axes[0, 1].set_ylabel("v velocity")
+    axes[0, 1].set_title("v velocity time series (Sample 0)")
     axes[0, 1].grid(True)
     axes[0, 1].legend()
 
     # エネルギーの時間変化
-    axes[1, 0].plot(energy_time_series[0], label='Kinetic energy', color='green')
-    axes[1, 0].set_xlabel('Time step')
-    axes[1, 0].set_ylabel('Energy')
-    axes[1, 0].set_title('Kinetic energy time series (Sample 0)')
+    axes[1, 0].plot(energy_time_series[0], label="Kinetic energy", color="green")
+    axes[1, 0].set_xlabel("Time step")
+    axes[1, 0].set_ylabel("Energy")
+    axes[1, 0].set_title("Kinetic energy time series (Sample 0)")
     axes[1, 0].grid(True)
     axes[1, 0].legend()
 
     # 速度の大きさの時間変化
-    velocity_mag_mean = np.sqrt(sample0[:, 0, :, :]**2 + sample0[:, 1, :, :]**2).mean(axis=(1, 2))
-    axes[1, 1].plot(velocity_mag_mean, label='|v| (spatial mean)', color='red')
-    axes[1, 1].set_xlabel('Time step')
-    axes[1, 1].set_ylabel('Velocity magnitude')
-    axes[1, 1].set_title('Velocity magnitude time series (Sample 0)')
+    velocity_mag_mean = np.sqrt(sample0[:, 0, :, :] ** 2 + sample0[:, 1, :, :] ** 2).mean(axis=(1, 2))
+    axes[1, 1].plot(velocity_mag_mean, label="|v| (spatial mean)", color="red")
+    axes[1, 1].set_xlabel("Time step")
+    axes[1, 1].set_ylabel("Velocity magnitude")
+    axes[1, 1].set_title("Velocity magnitude time series (Sample 0)")
     axes[1, 1].grid(True)
     axes[1, 1].legend()
 
@@ -231,35 +232,23 @@ def plot_time_series(data, energy_time_series, output_path):
 
     # ファイル名を変更
     output_dir = Path(output_path).parent
-    output_name = Path(output_path).stem + '_timeseries.png'
+    output_name = Path(output_path).stem + "_timeseries.png"
     timeseries_path = output_dir / output_name
 
-    plt.savefig(timeseries_path, dpi=150, bbox_inches='tight')
+    plt.savefig(timeseries_path, dpi=150, bbox_inches="tight")
     print(f"  保存: {timeseries_path}")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Verify SDA HDF5 data"
-    )
+    parser = argparse.ArgumentParser(description="Verify SDA HDF5 data")
+    parser.add_argument("--data", type=str, required=True, help="Path to HDF5 file (e.g., train.h5)")
     parser.add_argument(
-        '--data',
+        "--output",
         type=str,
-        required=True,
-        help='Path to HDF5 file (e.g., train.h5)'
+        default="verification_report.png",
+        help="Output path for visualization (default: verification_report.png)",
     )
-    parser.add_argument(
-        '--output',
-        type=str,
-        default='verification_report.png',
-        help='Output path for visualization (default: verification_report.png)'
-    )
-    parser.add_argument(
-        '--n-samples',
-        type=int,
-        default=3,
-        help='Number of samples to visualize (default: 3)'
-    )
+    parser.add_argument("--n-samples", type=int, default=3, help="Number of samples to visualize (default: 3)")
 
     args = parser.parse_args()
 
@@ -268,7 +257,7 @@ def main():
     # データ読み込み
     data, attrs = load_data(args.data)
 
-    print(f"\nHDF5属性:")
+    print("\nHDF5属性:")
     for key, value in attrs.items():
         print(f"  {key}: {value}")
 
@@ -303,10 +292,10 @@ def main():
     visualize_samples(data, args.output, n_samples=args.n_samples)
     plot_time_series(data, energy_time_series, args.output)
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("検証完了")
-    print("="*60)
+    print("=" * 60)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -23,11 +23,13 @@ Usage:
 """
 
 import argparse
-import numpy as np
-import h5py
 import re
 from pathlib import Path
+
+import h5py
+import numpy as np
 from tqdm import tqdm
+
 # scipy.ndimage.zoom は不要（リサイズ処理を削除）
 
 
@@ -39,7 +41,7 @@ def parse_tecplot(file_path):
         data_grid: (I, J, n_vars) の配列
         header: ヘッダー情報の辞書
     """
-    with open(file_path, 'r') as f:
+    with open(file_path) as f:
         lines = f.readlines()
 
     # ヘッダー解析
@@ -48,19 +50,19 @@ def parse_tecplot(file_path):
 
     for i, line in enumerate(lines):
         # グリッドサイズの取得
-        if 'I=' in line and 'J=' in line:
-            match = re.search(r'I=(\d+),\s*J=(\d+)', line)
+        if "I=" in line and "J=" in line:
+            match = re.search(r"I=(\d+),\s*J=(\d+)", line)
             if match:
-                header['I'] = int(match.group(1))
-                header['J'] = int(match.group(2))
+                header["I"] = int(match.group(1))
+                header["J"] = int(match.group(2))
 
         # 変数名の取得
-        if 'VARIABLES' in line:
+        if "VARIABLES" in line:
             vars_match = re.findall(r'"([^"]+)"', line)
-            header['variables'] = vars_match
+            header["variables"] = vars_match
 
         # データ開始位置
-        if 'DATAPACKING' in line:
+        if "DATAPACKING" in line:
             data_start_idx = i + 1
             break
 
@@ -70,10 +72,10 @@ def parse_tecplot(file_path):
 
     for line in data_lines:
         line = line.strip()
-        if line and not line.startswith('#'):
+        if line and not line.startswith("#"):
             try:
                 values = list(map(float, line.split()))
-                if len(values) == len(header['variables']):
+                if len(values) == len(header["variables"]):
                     data.append(values)
             except ValueError:
                 # 変換できない行はスキップ
@@ -85,13 +87,12 @@ def parse_tecplot(file_path):
     data = np.array(data)
 
     # グリッド形状に整形
-    I, J = header['I'], header['J']
+    I, J = header["I"], header["J"]
     expected_points = I * J
 
     if len(data) != expected_points:
         raise ValueError(
-            f"Data length mismatch in {file_path}: "
-            f"expected {expected_points} (I={I}, J={J}), got {len(data)}"
+            f"Data length mismatch in {file_path}: expected {expected_points} (I={I}, J={J}), got {len(data)}"
         )
 
     # Tecplotは i方向優先（行優先）でデータを出力
@@ -111,17 +112,14 @@ def extract_velocity(data_grid, header):
     Returns:
         velocity: (2, H, W) の配列
     """
-    variables = header['variables']
+    variables = header["variables"]
 
     # 変数のインデックスを取得
-    if 'u' not in variables or 'v' not in variables:
-        raise ValueError(
-            f"Required variables 'u' and 'v' not found. "
-            f"Available: {variables}"
-        )
+    if "u" not in variables or "v" not in variables:
+        raise ValueError(f"Required variables 'u' and 'v' not found. Available: {variables}")
 
-    u_idx = variables.index('u')
-    v_idx = variables.index('v')
+    u_idx = variables.index("u")
+    v_idx = variables.index("v")
 
     # (H, W, n_vars) → (2, H, W)
     u = data_grid[:, :, u_idx]
@@ -161,7 +159,7 @@ def coarsen(x, r):
         w_new = (w // r) * r
         h_start = (h - h_new) // 2
         w_start = (w - w_new) // 2
-        x = x[h_start:h_start+h_new, w_start:w_start+w_new]
+        x = x[h_start : h_start + h_new, w_start : w_start + w_new]
 
         x = x.reshape(h_new // r, r, w_new // r, r)
         x = x.mean(axis=(1, 3))
@@ -173,7 +171,7 @@ def coarsen(x, r):
         w_new = (w // r) * r
         h_start = (h - h_new) // 2
         w_start = (w - w_new) // 2
-        x = x[:, h_start:h_start+h_new, w_start:w_start+w_new]
+        x = x[:, h_start : h_start + h_new, w_start : w_start + w_new]
 
         x = x.reshape(c, h_new // r, r, w_new // r, r)
         x = x.mean(axis=(2, 4))
@@ -203,9 +201,7 @@ def sliding_window_split(timeseries, window, stride):
     n_timesteps = len(timeseries)
 
     if n_timesteps < window:
-        raise ValueError(
-            f"Time series length {n_timesteps} < window size {window}"
-        )
+        raise ValueError(f"Time series length {n_timesteps} < window size {window}")
 
     samples = []
     for start in range(0, n_timesteps - window + 1, stride):
@@ -232,7 +228,7 @@ def process_ibpm_output(
     input_path = Path(input_dir)
 
     # .pltファイルを取得
-    plt_files = sorted(input_path.glob('ibpm*.plt'))
+    plt_files = sorted(input_path.glob("ibpm*.plt"))
 
     if len(plt_files) == 0:
         raise ValueError(f"No .plt files found in {input_dir}")
@@ -286,14 +282,14 @@ def process_ibpm_output(
 
     # 統計情報
     stats = {
-        'n_samples': len(samples),
-        'n_timesteps_total': len(timeseries),
-        'shape': samples[0].shape if samples else None,
-        'min': timeseries.min(),
-        'max': timeseries.max(),
-        'mean': timeseries.mean(),
-        'std': timeseries.std(),
-        'nan_count': np.isnan(timeseries).sum(),
+        "n_samples": len(samples),
+        "n_timesteps_total": len(timeseries),
+        "shape": samples[0].shape if samples else None,
+        "min": timeseries.min(),
+        "max": timeseries.max(),
+        "mean": timeseries.mean(),
+        "std": timeseries.std(),
+        "nan_count": np.isnan(timeseries).sum(),
     }
 
     return samples, stats
@@ -322,9 +318,9 @@ def create_sda_dataset(
     n_valid = int(n_samples * valid_ratio)
 
     splits = {
-        'train': samples[:n_train],
-        'valid': samples[n_train:n_train+n_valid],
-        'test': samples[n_train+n_valid:],
+        "train": samples[:n_train],
+        "valid": samples[n_train : n_train + n_valid],
+        "test": samples[n_train + n_valid :],
     }
 
     for split_name, data_list in splits.items():
@@ -332,35 +328,35 @@ def create_sda_dataset(
             print(f"Warning: {split_name} split is empty")
             continue
 
-        output_file = output_path / f'{split_name}.h5'
+        output_file = output_path / f"{split_name}.h5"
 
         # データをスタック: (N, T, C, H, W)
         data = np.stack(data_list, axis=0)
         # 転置して (T, N, C, H, W) に変換（IBPMDatasetが期待する形式）
         data = np.transpose(data, (1, 0, 2, 3, 4))
 
-        with h5py.File(output_file, 'w') as f:
+        with h5py.File(output_file, "w") as f:
             dset = f.create_dataset(
-                'x',
+                "x",
                 data=data,
                 dtype=np.float32,
-                compression='gzip',
+                compression="gzip",
                 compression_opts=4,
             )
 
             # 属性を追加
-            dset.attrs['description'] = 'IBPM velocity field data (u, v)'
-            dset.attrs['shape_description'] = '(n_timesteps, n_samples, n_channels, height, width)'
-            dset.attrs['channels'] = 'u, v'
+            dset.attrs["description"] = "IBPM velocity field data (u, v)"
+            dset.attrs["shape_description"] = "(n_timesteps, n_samples, n_channels, height, width)"
+            dset.attrs["channels"] = "u, v"
 
             print(f"{split_name}: {dset.shape} -> {output_file}")
 
 
 def print_statistics(stats):
     """統計情報を表示"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Data Statistics")
-    print("="*60)
+    print("=" * 60)
     print(f"Number of samples: {stats['n_samples']}")
     print(f"Total timesteps: {stats['n_timesteps_total']}")
     print(f"Sample shape: {stats['shape']}")
@@ -369,58 +365,21 @@ def print_statistics(stats):
     print(f"Std: {stats['std']:.6f}")
     print(f"NaN count: {stats['nan_count']}")
 
-    if stats['nan_count'] > 0:
+    if stats["nan_count"] > 0:
         print("\nWARNING: Data contains NaN values!")
 
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Convert IBPM output to SDA HDF5 format"
-    )
-    parser.add_argument(
-        '--input',
-        type=str,
-        required=True,
-        help='Path to IBPM output directory'
-    )
-    parser.add_argument(
-        '--output',
-        type=str,
-        required=True,
-        help='Output directory for HDF5 files'
-    )
-    parser.add_argument(
-        '--coarsen',
-        type=int,
-        default=1,
-        help='Coarsening factor (default: 1, no coarsening)'
-    )
-    parser.add_argument(
-        '--window',
-        type=int,
-        default=64,
-        help='Time window size (default: 64)'
-    )
-    parser.add_argument(
-        '--stride',
-        type=int,
-        default=8,
-        help='Sliding window stride (default: 8)'
-    )
-    parser.add_argument(
-        '--train-ratio',
-        type=float,
-        default=0.7,
-        help='Training split ratio (default: 0.7)'
-    )
-    parser.add_argument(
-        '--valid-ratio',
-        type=float,
-        default=0.15,
-        help='Validation split ratio (default: 0.15)'
-    )
+    parser = argparse.ArgumentParser(description="Convert IBPM output to SDA HDF5 format")
+    parser.add_argument("--input", type=str, required=True, help="Path to IBPM output directory")
+    parser.add_argument("--output", type=str, required=True, help="Output directory for HDF5 files")
+    parser.add_argument("--coarsen", type=int, default=1, help="Coarsening factor (default: 1, no coarsening)")
+    parser.add_argument("--window", type=int, default=64, help="Time window size (default: 64)")
+    parser.add_argument("--stride", type=int, default=8, help="Sliding window stride (default: 8)")
+    parser.add_argument("--train-ratio", type=float, default=0.7, help="Training split ratio (default: 0.7)")
+    parser.add_argument("--valid-ratio", type=float, default=0.15, help="Validation split ratio (default: 0.15)")
 
     args = parser.parse_args()
 
@@ -448,5 +407,5 @@ def main():
     print("\n✓ Conversion completed successfully!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
