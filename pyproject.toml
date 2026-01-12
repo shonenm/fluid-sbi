@@ -24,6 +24,119 @@ dependencies = [
   "wandb>=0.22.0",
   "zuko>=1.4.1",
   "jax-cfd>=0.2.1",
+  # Phase 3: Logging
+  "structlog>=24.0.0",
+  "rich>=13.0.0",
+  # Phase 4: Config management
+  "pydantic>=2.0.0",
+  "pydantic-settings>=2.0.0",
 ]
 
+# =============================================================================
+# Ruff Configuration
+# =============================================================================
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+exclude = [
+  ".git",
+  ".venv",
+  "__pycache__",
+  "*.ipynb",
+]
 
+[tool.ruff.lint]
+select = [
+  "E",      # pycodestyle errors
+  "W",      # pycodestyle warnings
+  "F",      # Pyflakes
+  "I",      # isort
+  "UP",     # pyupgrade
+  "B",      # flake8-bugbear
+  "SIM",    # flake8-simplify
+  "RUF",    # Ruff-specific rules
+]
+ignore = [
+  "E501",   # line-length (handled by formatter)
+  "B008",   # function-call-in-default-argument (common in ML)
+  "B905",   # zip-without-explicit-strict
+  "RUF001", # ambiguous-unicode-character-string (Japanese comments)
+  "RUF002", # ambiguous-unicode-character-docstring (Japanese docstrings)
+  "RUF003", # ambiguous-unicode-character-comment (Japanese comments)
+  "E731",   # lambda-assignment (common in ML for schedulers)
+  "E741",   # ambiguous-variable-name (I, l, O common in math/ML)
+  "B007",   # unused-loop-control-variable (common pattern)
+  "SIM108", # ternary-operator (readability preference)
+  "SIM102", # collapsible-if (readability preference)
+  "RUF059", # unused-unpacked-variable (common in ML for shape unpacking)
+  "SIM105", # contextlib.suppress (not usable for imports)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Experiments use star imports for convenience during research
+"sda/experiments/**/*.py" = ["F401", "F403", "F405", "B006", "B023", "RUF013"]
+# Scripts are standalone utilities
+"scripts/*.py" = ["F401", "F403", "F405", "F841", "SIM118"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["sda"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+# =============================================================================
+# Pyright Configuration
+# =============================================================================
+[tool.pyright]
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
+include = ["sda/sda", "sda/experiments", "scripts"]
+exclude = [
+  ".venv",
+  "sda/.venv",
+  "**/__pycache__",
+  "**/node_modules",
+]
+# Disable noisy reports for ML research code
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnknownArgumentType = false
+reportMissingParameterType = false
+reportPrivateUsage = false
+reportArgumentType = false
+reportAssignmentType = false
+reportAttributeAccessIssue = false
+reportReturnType = false
+reportIndexIssue = false
+reportOptionalMemberAccess = false
+reportPossiblyUnboundVariable = false
+reportGeneralTypeIssues = false
+reportOptionalCall = false
+reportCallIssue = false
+reportWildcardImportFromLibrary = false
+reportUndefinedVariable = false
+reportPrivateImportUsage = false
+reportMissingImports = false
+reportOperatorIssue = false
+
+# =============================================================================
+# Pytest Configuration
+# =============================================================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+filterwarnings = [
+  "ignore::DeprecationWarning",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+    "pyright>=1.1.408",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.11",
+]
