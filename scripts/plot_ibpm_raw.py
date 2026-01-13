@@ -60,9 +60,13 @@ def read_tecplot_file(filepath):
     return x, y, u, v, vort
 
 
-def plot_single_timestep(filepath, output_dir=None, show=True):
+def plot_single_timestep(filepath, output_dir=None, show=True, cylinder_y=0.1, cylinder_radius=0.5):
     """
     単一タイムステップのデータを可視化
+
+    Args:
+        cylinder_y: 円柱中心のy座標
+        cylinder_radius: 円柱の半径
     """
     print(f"Reading {filepath.name}...")
     x, y, u, v, vort = read_tecplot_file(filepath)
@@ -80,7 +84,7 @@ def plot_single_timestep(filepath, output_dir=None, show=True):
     speed = np.sqrt(u**2 + v**2)
 
     # 図を作成
-    fig, axes = plt.subplots(2, 2, figsize=(16, 14))
+    fig, axes = plt.subplots(2, 2, figsize=(20, 9))
     fig.suptitle(f"IBPM Raw Data - Step {timestep:05d} (t = {time:.2f})", fontsize=16, fontweight="bold")
 
     # (0,0) 速度の大きさ
@@ -88,7 +92,7 @@ def plot_single_timestep(filepath, output_dir=None, show=True):
     im0 = ax.contourf(x, y, speed, levels=50, cmap="jet")
     ax.contour(x, y, speed, levels=10, colors="k", linewidths=0.3, alpha=0.3)
     # 円柱の位置を示す
-    circle = plt.Circle((0, 0), 0.5, color="white", fill=True, edgecolor="black", linewidth=2)
+    circle = plt.Circle((0, cylinder_y), cylinder_radius, color="white", fill=True, edgecolor="black", linewidth=2)
     ax.add_patch(circle)
     ax.set_xlabel("x", fontsize=12)
     ax.set_ylabel("y", fontsize=12)
@@ -101,7 +105,7 @@ def plot_single_timestep(filepath, output_dir=None, show=True):
     ax = axes[0, 1]
     im1 = ax.contourf(x, y, u, levels=50, cmap="RdBu_r")
     ax.contour(x, y, u, levels=10, colors="k", linewidths=0.3, alpha=0.3)
-    circle = plt.Circle((0, 0), 0.5, color="gray", fill=True, edgecolor="black", linewidth=2)
+    circle = plt.Circle((0, cylinder_y), cylinder_radius, color="gray", fill=True, edgecolor="black", linewidth=2)
     ax.add_patch(circle)
     ax.set_xlabel("x", fontsize=12)
     ax.set_ylabel("y", fontsize=12)
@@ -114,7 +118,7 @@ def plot_single_timestep(filepath, output_dir=None, show=True):
     ax = axes[1, 0]
     im2 = ax.contourf(x, y, v, levels=50, cmap="RdBu_r")
     ax.contour(x, y, v, levels=10, colors="k", linewidths=0.3, alpha=0.3)
-    circle = plt.Circle((0, 0), 0.5, color="gray", fill=True, edgecolor="black", linewidth=2)
+    circle = plt.Circle((0, cylinder_y), cylinder_radius, color="gray", fill=True, edgecolor="black", linewidth=2)
     ax.add_patch(circle)
     ax.set_xlabel("x", fontsize=12)
     ax.set_ylabel("y", fontsize=12)
@@ -128,7 +132,7 @@ def plot_single_timestep(filepath, output_dir=None, show=True):
     vort_levels = np.linspace(-5, 5, 51)
     im3 = ax.contourf(x, y, vort, levels=vort_levels, cmap="RdBu_r", extend="both")
     ax.contour(x, y, vort, levels=10, colors="k", linewidths=0.3, alpha=0.3)
-    circle = plt.Circle((0, 0), 0.5, color="gray", fill=True, edgecolor="black", linewidth=2)
+    circle = plt.Circle((0, cylinder_y), cylinder_radius, color="gray", fill=True, edgecolor="black", linewidth=2)
     ax.add_patch(circle)
     ax.set_xlabel("x", fontsize=12)
     ax.set_ylabel("y", fontsize=12)
@@ -213,9 +217,13 @@ def plot_force_coefficients(force_file, output_file=None, show=True):
         plt.close()
 
 
-def plot_multiple_timesteps(data_dir, timesteps, output_dir=None, show=True):
+def plot_multiple_timesteps(data_dir, timesteps, output_dir=None, show=True, cylinder_y=0.1, cylinder_radius=0.5):
     """
     複数のタイムステップを並べて表示
+
+    Args:
+        cylinder_y: 円柱中心のy座標
+        cylinder_radius: 円柱の半径
     """
     data_dir = Path(data_dir)
     n_steps = len(timesteps)
@@ -240,7 +248,7 @@ def plot_multiple_timesteps(data_dir, timesteps, output_dir=None, show=True):
         # 速度の大きさ
         ax = axes[i, 0]
         im0 = ax.contourf(x, y, speed, levels=30, cmap="jet")
-        circle = plt.Circle((0, 0), 0.5, color="white", fill=True, edgecolor="black", linewidth=2)
+        circle = plt.Circle((0, cylinder_y), cylinder_radius, color="white", fill=True, edgecolor="black", linewidth=2)
         ax.add_patch(circle)
         ax.set_ylabel(f"t = {time:.2f}", fontsize=12, fontweight="bold")
         if i == 0:
@@ -251,7 +259,7 @@ def plot_multiple_timesteps(data_dir, timesteps, output_dir=None, show=True):
         # u成分
         ax = axes[i, 1]
         im1 = ax.contourf(x, y, u, levels=30, cmap="RdBu_r")
-        circle = plt.Circle((0, 0), 0.5, color="gray", fill=True, edgecolor="black", linewidth=2)
+        circle = plt.Circle((0, cylinder_y), cylinder_radius, color="gray", fill=True, edgecolor="black", linewidth=2)
         ax.add_patch(circle)
         if i == 0:
             ax.set_title("u-velocity", fontsize=14)
@@ -262,7 +270,7 @@ def plot_multiple_timesteps(data_dir, timesteps, output_dir=None, show=True):
         ax = axes[i, 2]
         vort_levels = np.linspace(-5, 5, 31)
         im2 = ax.contourf(x, y, vort, levels=vort_levels, cmap="RdBu_r", extend="both")
-        circle = plt.Circle((0, 0), 0.5, color="gray", fill=True, edgecolor="black", linewidth=2)
+        circle = plt.Circle((0, cylinder_y), cylinder_radius, color="gray", fill=True, edgecolor="black", linewidth=2)
         ax.add_patch(circle)
         if i == 0:
             ax.set_title("Vorticity", fontsize=14)
@@ -289,14 +297,14 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Plot IBPM raw data")
-    parser.add_argument(
-        "--data-dir", type=str, default="/workspace/data/ibpm_full", help="Directory containing IBPM output files"
-    )
-    parser.add_argument("--output-dir", type=str, default="/workspace/data/ibpm_plots", help="Directory to save plots")
+    parser.add_argument("--data-dir", type=str, default="data/ibpm_wide", help="Directory containing IBPM output files")
+    parser.add_argument("--output-dir", type=str, default="sda/results/ibpm/raw_plots", help="Directory to save plots")
     parser.add_argument("--timestep", type=int, nargs="+", default=None, help="Specific timestep(s) to plot")
     parser.add_argument("--evolution", action="store_true", help="Plot flow evolution at multiple timesteps")
     parser.add_argument("--force", action="store_true", help="Plot force coefficients")
     parser.add_argument("--no-show", action="store_true", help="Do not display plots (only save)")
+    parser.add_argument("--cylinder-y", type=float, default=0.1, help="Cylinder center y-coordinate (default: 0.1)")
+    parser.add_argument("--cylinder-radius", type=float, default=0.5, help="Cylinder radius (default: 0.5)")
 
     args = parser.parse_args()
 
@@ -313,24 +321,33 @@ def main():
         else:
             print(f"Force file not found: {force_file}")
 
+    # 円柱パラメータ
+    cyl_y = args.cylinder_y
+    cyl_r = args.cylinder_radius
+
     # 流れの発展を表示
     if args.evolution:
         timesteps = [0, 50, 100, 150, 200, 250]
-        plot_multiple_timesteps(data_dir, timesteps, output_dir=output_dir, show=show)
+        plot_multiple_timesteps(
+            data_dir, timesteps, output_dir=output_dir, show=show, cylinder_y=cyl_y, cylinder_radius=cyl_r
+        )
 
     # 特定のタイムステップをプロット
     if args.timestep:
         for step in args.timestep:
             filepath = data_dir / f"ibpm{step:05d}.plt"
             if filepath.exists():
-                plot_single_timestep(filepath, output_dir=output_dir, show=show)
+                plot_single_timestep(
+                    filepath, output_dir=output_dir, show=show, cylinder_y=cyl_y, cylinder_radius=cyl_r
+                )
             else:
                 print(f"File not found: {filepath}")
 
     # デフォルト：代表的なタイムステップをプロット
     if not args.force and not args.evolution and not args.timestep:
         print("\n=== Plotting IBPM Raw Data ===")
-        print(f"Output directory: {output_dir}\n")
+        print(f"Output directory: {output_dir}")
+        print(f"Cylinder: y={cyl_y}, radius={cyl_r}\n")
 
         # 力係数をプロット
         print("1. Force coefficients...")
@@ -341,14 +358,18 @@ def main():
         # 流れの発展をプロット
         print("\n2. Flow evolution (t=0, 1, 2, 3, 4, 5)...")
         timesteps = [0, 50, 100, 150, 200, 250]
-        plot_multiple_timesteps(data_dir, timesteps, output_dir=output_dir, show=show)
+        plot_multiple_timesteps(
+            data_dir, timesteps, output_dir=output_dir, show=show, cylinder_y=cyl_y, cylinder_radius=cyl_r
+        )
 
         # 代表的なタイムステップの詳細をプロット
         print("\n3. Detailed views (t=0, 1, 3, 5)...")
         for step in [0, 50, 150, 250]:
             filepath = data_dir / f"ibpm{step:05d}.plt"
             if filepath.exists():
-                plot_single_timestep(filepath, output_dir=output_dir, show=show)
+                plot_single_timestep(
+                    filepath, output_dir=output_dir, show=show, cylinder_y=cyl_y, cylinder_radius=cyl_r
+                )
 
         print(f"\n=== All plots saved to {output_dir} ===")
 

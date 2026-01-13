@@ -13,15 +13,16 @@ IBPM_BIN=${IBPM_BIN:-ibpm}
 DATA_DIR=/home/devuser/fluid-sbi/data
 OUTPUT_BASE=$DATA_DIR/ibpm_gen
 
-# 共通パラメータ（学習データと同じ）
+# 共通パラメータ（学習データ ibpm_wide と同じ）
 NX=400
 NY=200
-LENGTH=8
-XOFFSET=-2
-YOFFSET=-2
+LENGTH=16    # 学習データ: 16 (x: -4 to 12)
+XOFFSET=-4   # 学習データ: -4
+YOFFSET=-4   # 学習データ: -4 (y: -4 to 4)
 RE=100
 DT=0.02
-NSTEPS=300
+NSTEPS=5000  # 学習データ: 5000
+TECPLOT=10   # 学習データ: 10ステップ毎に出力
 
 echo "=============================================="
 echo "IBPM Generalization Data Generation"
@@ -61,7 +62,7 @@ for GEOM in cylinder_y_m02 cylinder_y_m01 cylinder_y_p02; do
               -xoffset $XOFFSET -yoffset $YOFFSET \
               -Re $RE -dt $DT -nsteps $NSTEPS \
               -geom $GEOM_FILE \
-              -tecplot 1 -outdir $OUTDIR
+              -tecplot $TECPLOT -outdir $OUTDIR
 
     echo "  Done: $(ls $OUTDIR/*.plt 2>/dev/null | wc -l) timesteps generated"
 done
@@ -88,7 +89,7 @@ for GEOM in cylinder_r04 cylinder_r06; do
               -xoffset $XOFFSET -yoffset $YOFFSET \
               -Re $RE -dt $DT -nsteps $NSTEPS \
               -geom $GEOM_FILE \
-              -tecplot 1 -outdir $OUTDIR
+              -tecplot $TECPLOT -outdir $OUTDIR
 
     echo "  Done: $(ls $OUTDIR/*.plt 2>/dev/null | wc -l) timesteps generated"
 done
