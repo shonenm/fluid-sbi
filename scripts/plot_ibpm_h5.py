@@ -67,10 +67,10 @@ def plot_h5_samples(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     with h5py.File(h5_file, "r") as f:
-        data = f["x"][:]  # (T, N, C, H, W)
+        data = f["x"][:]  # (N, T, C, H, W)
 
     print(f"\nData shape: {data.shape}")
-    T, N, C, H, W = data.shape
+    N, T, C, H, W = data.shape
 
     # 領域サイズを推定（アスペクト比から）
     # IBPMではグリッド間隔が等方的(dx=dy)なので、アスペクト比からlengthを計算
@@ -95,16 +95,16 @@ def plot_h5_samples(
         yoffset = -4.0
 
     # サンプルを取得
-    if time_idx >= T:
-        time_idx = 0
-        print(f"Warning: time_idx {time_idx} out of range, using 0")
-
     if sample_idx >= N:
+        print(f"Warning: sample_idx {sample_idx} out of range (N={N}), using 0")
         sample_idx = 0
-        print(f"Warning: sample_idx {sample_idx} out of range, using 0")
+
+    if time_idx >= T:
+        print(f"Warning: time_idx {time_idx} out of range (T={T}), using 0")
+        time_idx = 0
 
     # (C, H, W) を取得
-    sample = data[time_idx, sample_idx]  # (2, H, W)
+    sample = data[sample_idx, time_idx]  # (2, H, W)
     u = sample[0]  # (H, W)
     v = sample[1]  # (H, W)
 
@@ -225,9 +225,9 @@ def plot_time_series(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     with h5py.File(h5_file, "r") as f:
-        data = f["x"][:]  # (T, N, C, H, W)
+        data = f["x"][:]  # (N, T, C, H, W)
 
-    T, N, C, H, W = data.shape
+    N, T, C, H, W = data.shape
 
     # 領域サイズを推定（dx=dyの等方的グリッド）
     aspect_ratio = W / H
@@ -262,7 +262,7 @@ def plot_time_series(
     X, Y = np.meshgrid(x, y)
 
     for i, t_idx in enumerate(time_indices):
-        sample = data[t_idx, sample_idx]
+        sample = data[sample_idx, t_idx]
         u = sample[0]
         v = sample[1]
         speed = np.sqrt(u**2 + v**2)

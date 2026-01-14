@@ -300,6 +300,7 @@ def create_sda_dataset(
     output_dir,
     train_ratio=0.7,
     valid_ratio=0.15,
+    output_format="NT",
 ):
     """
     SDA形式のHDF5データセットを作成
@@ -309,6 +310,7 @@ def create_sda_dataset(
         output_dir: 出力ディレクトリ
         train_ratio: 訓練データの割合
         valid_ratio: 検証データの割合
+        output_format: "NT"=(N,T,C,H,W) 学習データと同じ形式, "TN"=(T,N,C,H,W) レガシー形式
     """
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -332,8 +334,15 @@ def create_sda_dataset(
 
         # データをスタック: (N, T, C, H, W)
         data = np.stack(data_list, axis=0)
-        # 転置して (T, N, C, H, W) に変換（IBPMDatasetが期待する形式）
-        data = np.transpose(data, (1, 0, 2, 3, 4))
+
+        # 形式に応じて転置
+        if output_format == "TN":
+            # レガシー形式: (T, N, C, H, W)
+            data = np.transpose(data, (1, 0, 2, 3, 4))
+            shape_desc = "(n_timesteps, n_samples, n_channels, height, width)"
+        else:
+            # NT形式: (N, T, C, H, W) - 学習データと同じ
+            shape_desc = "(n_samples, n_timesteps, n_channels, height, width)"
 
         with h5py.File(output_file, "w") as f:
             dset = f.create_dataset(
@@ -346,10 +355,10 @@ def create_sda_dataset(
 
             # 属性を追加
             dset.attrs["description"] = "IBPM velocity field data (u, v)"
-            dset.attrs["shape_description"] = "(n_timesteps, n_samples, n_channels, height, width)"
+            dset.attrs["shape_description"] = shape_desc
             dset.attrs["channels"] = "u, v"
 
-            print(f"{split_name}: {dset.shape} -> {output_file}")
+            print(f"{split_name}: {dset.shape} ({output_format} format) -> {output_file}")
 
 
 def print_statistics(stats):
@@ -377,6 +386,13 @@ def main():
     parser.add_argument("--output", type=str, required=True, help="Output directory for HDF5 files")
     parser.add_argument("--coarsen", type=int, default=1, help="Coarsening factor (default: 1, no coarsening)")
     parser.add_argument("--window", type=int, default=64, help="Time window size (default: 64)")
+    parser.add_argument(
+        "--format",
+        type=str,
+        choices=["NT", "TN"],
+        default="NT",
+        help="Output format: NT=(N,T,C,H,W) like train data, TN=(T,N,C,H,W) legacy (default: NT)",
+    )
     parser.add_argument("--stride", type=int, default=8, help="Sliding window stride (default: 8)")
     parser.add_argument("--train-ratio", type=float, default=0.7, help="Training split ratio (default: 0.7)")
     parser.add_argument("--valid-ratio", type=float, default=0.15, help="Validation split ratio (default: 0.15)")
@@ -397,11 +413,13 @@ def main():
 
     # HDF5データセットの作成
     print(f"Creating SDA dataset in: {args.output}")
+    print(f"Output format: {args.format}")
     create_sda_dataset(
         samples,
         args.output,
         train_ratio=args.train_ratio,
         valid_ratio=args.valid_ratio,
+        output_format=args.format,
     )
 
     print("\n✓ Conversion completed successfully!")
