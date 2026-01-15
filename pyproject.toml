@@ -30,7 +30,15 @@ dependencies = [
   # Phase 4: Config management
   "pydantic>=2.0.0",
   "pydantic-settings>=2.0.0",
+  # Latent SDA
+  "scikit-learn>=1.0",
+  "pillow>=10.0.0",
+  # Local packages
+  "sda",
 ]
+
+[tool.uv.sources]
+sda = { path = "./sda", editable = true }
 
 # =============================================================================
 # Ruff Configuration
