@@ -5,3 +5,6 @@
 # [submodule "ibpm"]
 # 	path = ibpm
 # 	url = https://github.com/cwrowley/ibpm.git
+[submodule "appa"]
+	path = appa
+	url = git@github.com:shonenm/appa.git
